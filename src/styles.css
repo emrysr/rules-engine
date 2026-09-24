@@ -21,6 +21,124 @@ details details {
   padding-left: 0.75rem;
 }
 
+/* Each fieldset is a Bulma grid cell; the Add button sits bottom right, so
+   cells of different heights still line their buttons up at the bottom. */
+fieldset.form-group {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--bulma-border);
+  border-radius: var(--bulma-radius);
+  padding: 0.5rem 1rem 1rem;
+  min-width: 0;
+}
+
+fieldset.form-group > legend {
+  padding: 0 0.4rem;
+  margin-bottom: 0;
+}
+
+.form-group-actions {
+  margin-top: auto;
+  padding-top: 0.5rem;
+  text-align: right;
+}
+
+/* A field label with its delete button pushed to the far end. */
+.field-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.inline-edit {
+  cursor: text;
+  border-bottom: 1px dashed transparent;
+}
+
+.inline-edit:hover {
+  border-bottom-color: currentColor;
+}
+
+.inline-edit-input {
+  max-width: 16rem;
+}
+
+/* Add-field menu: a popover in the top layer, anchored under whichever Add
+   button opened it (FieldTypeMenu names that button the anchor) where CSS
+   anchor positioning is supported; centred (the UA default) elsewhere. */
+/* Bulma's .box sets display: block, which beats the UA rule hiding closed popovers. */
+.field-type-menu:not(:popover-open) {
+  display: none;
+}
+
+/* Vertical scroll only: the gutter reserves the scrollbar's width up front, so
+   it can't push the items sideways and cause a horizontal scrollbar too. */
+.field-type-menu {
+  max-height: min(18rem, 50vh);
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  min-width: 12rem;
+}
+
+.field-type-menu .menu-list button {
+  cursor: pointer;
+}
+
+@supports (anchor-name: --a) {
+  .field-type-menu {
+    position-anchor: --field-type-menu;
+    inset: auto;
+    top: anchor(bottom);
+    right: anchor(right);
+    margin: 0.25rem 0 0;
+    position-try-fallbacks: flip-block;
+  }
+}
+
+/* Options dialog: a native <dialog> holding a Bulma card. The dialog itself
+   is just a transparent frame; the card supplies the look. The content
+   scrolls when there are many options, keeping header and footer in view. */
+dialog.options-dialog {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  width: min(36rem, calc(100vw - 2rem));
+  max-width: none;
+  max-height: none;
+  overflow: visible;
+}
+
+dialog.options-dialog::backdrop {
+  background-color: hsla(var(--bulma-scheme-h), var(--bulma-scheme-s), 4%, 0.86);
+}
+
+dialog.options-dialog .card {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 2rem);
+}
+
+/* min-height: 0 lets this flex item shrink below its content, so it scrolls
+   instead of pushing the footer off screen. */
+dialog.options-dialog .card-content {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* An icon-only addon button sizes to its icon, shorter than the inputs beside
+   it; fill the control (which the addon row stretches) to line them up. */
+.option-remove {
+  height: 100%;
+}
+
+/* Space between a checkbox/radio and its label text. */
+label.checkbox > span:last-child,
+label.radio > span:last-child {
+  margin-left: 0.4em;
+}
+
 .rule-row {
   border-bottom: 1px solid #eee;
   padding: 0.4rem 0;

@@ -6,14 +6,15 @@ export const defaultSources: DataSource[] = [
 ]
 
 export const defaultSchema: SchemaField[] = [
-  { key: 'minRating', label: 'Minimum product rating', type: 'number', default: 4 },
-  { key: 'minAge', label: 'Minimum user age', type: 'number', default: 25 },
+  { key: 'minRating', label: 'Minimum product rating', type: 'number', default: 4, group: 'Products' },
+  { key: 'minAge', label: 'Minimum user age', type: 'number', default: 25, group: 'Users' },
   {
     key: 'bloodType',
     label: 'User blood type',
     type: 'select',
     options: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],
     default: 'O+',
+    group: 'Users',
   },
   {
     key: 'category',
@@ -30,6 +31,7 @@ export const defaultSchema: SchemaField[] = [
       'sunglasses',
     ],
     default: 'smartphones',
+    group: 'Products',
   },
 ]
 
@@ -38,7 +40,7 @@ export const defaultRules: Rule[] = [
     key: 'highRating',
     source: 'products',
     enabled: true,
-    logic: { '>': [{ var: 'rating' }, { var: 'formData.minRating' }] },
+    logic: { '>': [{ var: 'rating' }, { var: 'formData.products.minimum_product_rating' }] },
   },
   {
     key: 'inStock',
@@ -50,19 +52,19 @@ export const defaultRules: Rule[] = [
     key: 'categoryMatch',
     source: 'products',
     enabled: true,
-    logic: { '==': [{ var: 'category' }, { var: 'formData.category' }] },
+    logic: { '==': [{ var: 'category' }, { var: 'formData.products.product_category' }] },
   },
   {
     key: 'adultUser',
     source: 'users',
     enabled: true,
-    logic: { '>=': [{ var: 'age' }, { var: 'formData.minAge' }] },
+    logic: { '>=': [{ var: 'age' }, { var: 'formData.users.minimum_user_age' }] },
   },
   {
     key: 'bloodTypeMatch',
     source: 'users',
     enabled: false,
-    logic: { '==': [{ var: 'bloodGroup' }, { var: 'formData.bloodType' }] },
+    logic: { '==': [{ var: 'bloodGroup' }, { var: 'formData.users.user_blood_type' }] },
   },
 ]
 
@@ -74,5 +76,8 @@ export const defaultSectionOpen: Record<SectionName, boolean> = {
   fetched: false,
 }
 
-/** Bump when the persisted shape changes so stale caches are ignored. */
-export const STORAGE_KEY = 'cdre-config-v3'
+/**
+ * Bump when the persisted shape changes so stale caches are ignored. v4: rules
+ * read form values by snake_cased legend + label, not by field key.
+ */
+export const STORAGE_KEY = 'cdre-config-v4'

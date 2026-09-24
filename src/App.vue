@@ -46,10 +46,6 @@ onMounted(() => store.fetchAll())
           reorder fields, pick type, set options)
         </li>
         <li>
-          Import a complete config object — paste one JSON blob covering sources + schema +
-          rules + form defaults in a single action
-        </li>
-        <li>
           Save / recall named config presets (e.g. "Desirable Campervan", "Holiday Activities")
           via local storage
         </li>

@@ -9,13 +9,31 @@ export interface DataSource {
   url: string
 }
 
+/** One choice of a select, radio or checkbox group: what's shown, what's stored. */
+export interface FieldOption {
+  label: string
+  value: string
+}
+
 /** A FormKit field definition, rendered as a real <FormKit> input. */
 export interface SchemaField {
   key: string
   label: string
   type: string
-  options?: string[] | Record<string, string>
+  /** Any shape FormKit accepts; the form editor writes FieldOption pairs. */
+  options?: string[] | Record<string, string> | FieldOption[]
   default?: unknown
+  /**
+   * Extra Bulma classes, e.g. "is-primary is-rounded is-small". Added to the
+   * element Bulma expects them on: the div.select wrapper for selects, the
+   * input itself for everything else.
+   */
+  classes?: string
+  /**
+   * Fieldset legend. Fields sharing a group render together in one fieldset;
+   * ungrouped fields render without one. Doesn't affect formData's shape.
+   */
+  group?: string
 }
 
 /**
@@ -43,6 +61,17 @@ export interface MatchInfo {
 export interface SourceResult {
   total: number
   matched: number
+}
+
+/**
+ * A complete, portable config: everything needed to reproduce a setup in one
+ * blob. `formData` is optional; fields it omits fall back to schema defaults.
+ */
+export interface EngineConfig {
+  sources: DataSource[]
+  schema: SchemaField[]
+  rules: Rule[]
+  formData?: Record<string, unknown>
 }
 
 /** Everything restored from localStorage between visits. */

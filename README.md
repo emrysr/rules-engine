@@ -15,12 +15,15 @@ are all JSON, editable at runtime:
 | Config | Shape | Does |
 | --- | --- | --- |
 | **Data sources** | `{ key, url }` | `key` is the namespace rules target, and the response field the array is auto-extracted from. |
-| **Form schema** | `{ key, label, type, options?, default? }` | Rendered as real `<FormKit>` inputs. |
+| **Form schema** | `{ key, label, type, options?, default?, group?, classes? }` | Rendered as real `<FormKit>` inputs; `group` is the fieldset it sits in. |
 | **Rules** | `{ key, source, enabled, logic }` | `logic` is JSON Logic. `source` says which data source it filters. |
 
 The point is the coupling between the last two: a rule reads an entry's fields
-directly (`{"var": "rating"}`) *and* live form values via the `formData` namespace
-(`{"var": "formData.minRating"}`). Form inputs are rule inputs, not UI decoration —
+directly (`{"var": "rating"}`) *and* live form values via the `formData` namespace.
+A form value's path is its fieldset legend and label, snake_cased: "Minimum product
+rating" in the "Products" fieldset is `{"var": "formData.products.minimum_product_rating"}`
+(an ungrouped field is just `formData.<label>`). Renaming a label or legend in the form
+rewrites the rules that read it. Form inputs are rule inputs, not UI decoration —
 change a field and every match count re-runs.
 
 ```json
@@ -28,7 +31,7 @@ change a field and every match count re-runs.
   "key": "highRating",
   "source": "products",
   "enabled": true,
-  "logic": { ">": [{ "var": "rating" }, { "var": "formData.minRating" }] }
+  "logic": { ">": [{ "var": "rating" }, { "var": "formData.products.minimum_product_rating" }] }
 }
 ```
 
@@ -82,7 +85,8 @@ Outputs land in `public/`: the two manifest sizes, a maskable variant, an
 src/
   stores/engine.ts     config parsing, fetching, evaluation, persistence
   components/          one panel per section of the UI
-  types.ts             Rule / DataSource / SchemaField / persisted state
+  config.ts            validation for whole-config import
+  types.ts             Rule / DataSource / SchemaField / EngineConfig / persisted state
   defaults.ts          the seed config shipped on first load
 ```
 
@@ -92,7 +96,7 @@ src/
       (field / operator / value pickers instead of hand-written JSON Logic)
 - [ ] **FormKit schema editor** — replace the raw JSON textarea with a field builder
       (add/edit/reorder fields, pick type, set options)
-- [ ] **Import a complete config object** — one JSON blob covering sources + schema +
+- [x] **Import a complete config object** — one JSON blob covering sources + schema +
       rules + form defaults in a single action
 - [ ] **Named config presets** — save/recall e.g. "Desirable Campervan", "Holiday
       Activities"

@@ -1,0 +1,52 @@
+import type { EngineConfig } from '@/types'
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value)
+}
+
+/** Check that `value` is an array of objects each carrying the given string fields. */
+function checkList(value: unknown, name: string, stringFields: string[]): string | null {
+  if (!Array.isArray(value)) return `"${name}" must be an array.`
+  for (const [i, item] of value.entries()) {
+    if (!isObject(item)) return `${name}[${i}] must be an object.`
+    for (const field of stringFields) {
+      if (typeof item[field] !== 'string' || item[field] === '') {
+        return `${name}[${i}] is missing a "${field}" string.`
+      }
+    }
+  }
+  return null
+}
+
+/**
+ * Parse and validate a complete config blob. Validation is structural only —
+ * enough that an import can't leave the app holding a shape it can't render.
+ * Whether a rule's JSON Logic makes sense is still decided at evaluation time.
+ */
+export function parseConfig(text: string): { config: EngineConfig } | { error: string } {
+  let value: unknown
+  try {
+    value = JSON.parse(text)
+  } catch (e) {
+    return { error: 'Invalid JSON: ' + (e as Error).message }
+  }
+  if (!isObject(value)) {
+    return { error: 'Config must be an object with "sources", "schema" and "rules".' }
+  }
+
+  const problem =
+    checkList(value.sources, 'sources', ['key', 'url']) ??
+    checkList(value.schema, 'schema', ['key', 'type']) ??
+    checkList(value.rules, 'rules', ['key', 'source'])
+  if (problem) return { error: problem }
+
+  const rules = value.rules as Record<string, unknown>[]
+  const badLogic = rules.findIndex((r) => !('logic' in r))
+  if (badLogic !== -1) return { error: `rules[${badLogic}] is missing "logic".` }
+
+  if (value.formData !== undefined && !isObject(value.formData)) {
+    return { error: '"formData" must be an object when present.' }
+  }
+
+  return { config: value as unknown as EngineConfig }
+}

@@ -1,8 +1,19 @@
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { defineStore } from 'pinia'
 import jsonLogic from 'json-logic-js'
+import { parseConfig } from '@/config'
+import { typeNoun } from '@/fieldTypes'
+import {
+  FORM_NAMESPACE,
+  buildRuleData,
+  findPathClash,
+  pathClash,
+  renameVar,
+  rulePath,
+} from '@/paths'
 import type {
   DataSource,
+  EngineConfig,
   Entry,
   MatchInfo,
   PersistedState,
@@ -95,31 +106,25 @@ export const useEngineStore = defineStore('engine', () => {
   const rulesConfig = computed(() => parsed<Rule>(rulesText.value, rulesError))
 
   // Seed form values for newly added fields without disturbing existing input.
-  watch(
-    schemaFields,
-    (fields) => {
-      const next = { ...formData.value }
-      for (const f of fields) {
-        if (!(f.key in next)) {
-          next[f.key] =
-            f.default ?? (f.type === 'checkbox' ? false : f.type === 'number' ? 0 : '')
-        }
+  function seedFormData(fields: SchemaField[]): void {
+    const next = { ...formData.value }
+    for (const f of fields) {
+      if (!(f.key in next)) {
+        next[f.key] = f.default ?? (f.type === 'checkbox' ? false : f.type === 'number' ? 0 : '')
       }
-      formData.value = next
-    },
-    { immediate: true },
-  )
+    }
+    formData.value = next
+  }
 
   // Same for toggles: `enabled` only seeds a rule the user has never seen.
-  watch(
-    rulesConfig,
-    (rules) => {
-      for (const r of rules) {
-        if (!(r.key in ruleToggles)) ruleToggles[r.key] = r.enabled !== false
-      }
-    },
-    { immediate: true },
-  )
+  function seedToggles(rules: Rule[]): void {
+    for (const r of rules) {
+      if (!(r.key in ruleToggles)) ruleToggles[r.key] = r.enabled !== false
+    }
+  }
+
+  watch(schemaFields, seedFormData, { immediate: true })
+  watch(rulesConfig, seedToggles, { immediate: true })
 
   // --- Fetching -------------------------------------------------------------
   async function fetchOne(src: DataSource): Promise<void> {
@@ -152,6 +157,15 @@ export const useEngineStore = defineStore('engine', () => {
 
   // --- Evaluation -----------------------------------------------------------
   /**
+   * Form values as rules see them: nested by snake_cased legend and label
+   * (formData.products.minimum_product_rating) rather than the storage keys.
+   */
+  const ruleFormData = computed(() => buildRuleData(schemaFields.value, formData.value))
+
+  /** Set when hand-edited schema JSON gives two fields the same rule path. */
+  const formPathError = computed(() => findPathClash(schemaFields.value))
+
+  /**
    * Entry fields are spread at the top level so rules read them directly;
    * live form values are namespaced under `formData` so form inputs ARE rule
    * inputs. A rule that throws (bad operator, missing field) counts as no match
@@ -159,7 +173,7 @@ export const useEngineStore = defineStore('engine', () => {
    */
   function evaluate(rule: Rule, entry: Entry): boolean {
     try {
-      return !!jsonLogic.apply(rule.logic, { ...entry, formData: formData.value })
+      return !!jsonLogic.apply(rule.logic, { ...entry, [FORM_NAMESPACE]: ruleFormData.value })
     } catch {
       return false
     }
@@ -199,6 +213,184 @@ export const useEngineStore = defineStore('engine', () => {
     ),
   )
 
+  // --- Whole-config import / export -----------------------------------------
+  /**
+   * Snapshot the current setup as one blob. Refuses while any section holds
+   * invalid JSON — exporting it as `[]` would silently lose that section.
+   */
+  function exportConfig(): { config: EngineConfig } | { error: string } {
+    const invalid = (
+      [
+        ['sources', sourcesError],
+        ['schema', schemaError],
+        ['rules', rulesError],
+      ] as const
+    ).find(([, err]) => err.value)
+    if (invalid) return { error: `Fix the invalid ${invalid[0]} JSON before exporting.` }
+    return {
+      config: {
+        sources: dataSources.value,
+        schema: schemaFields.value,
+        rules: rulesConfig.value,
+        formData: { ...formData.value },
+      },
+    }
+  }
+
+  /**
+   * Replace the whole setup from one blob. This is a clean slate, not a merge:
+   * toggles reset so each imported rule's `enabled` applies, and form values
+   * reset so fields the blob omits take their schema defaults. Seeding is
+   * called directly rather than left to the watchers: if a section's text is
+   * unchanged the ref never triggers, and the reset state would stay empty.
+   * Returns an error message, or '' on success.
+   */
+  function importConfig(text: string): string {
+    const result = parseConfig(text)
+    if ('error' in result) return result.error
+    const { config } = result
+
+    sourcesText.value = JSON.stringify(config.sources, null, 2)
+    schemaText.value = JSON.stringify(config.schema, null, 2)
+    rulesText.value = JSON.stringify(config.rules, null, 2)
+    formData.value = { ...config.formData }
+    for (const key in ruleToggles) delete ruleToggles[key]
+    emptyGroups.value = []
+    seedFormData(config.schema)
+    seedToggles(config.rules)
+
+    // Drop cached data for sources that no longer exist, then refresh the rest.
+    const keep = new Set(config.sources.map((s) => s.key))
+    for (const key in rawData) if (!keep.has(key)) delete rawData[key]
+    fetchAll()
+    return ''
+  }
+
+  // --- Form editing ---------------------------------------------------------
+  /**
+   * Groups with no fields yet. A group otherwise only exists through its
+   * fields' `group` value, so a freshly added one is held here until a field
+   * joins it. Session-only: an empty fieldset isn't worth persisting.
+   */
+  const emptyGroups = ref<string[]>([])
+
+  /**
+   * Rewrite the schema through `edit`, keeping the rules in step: any field
+   * whose rule path changes (a label or group rename) has every rule `var`
+   * that read the old path rewritten to the new one. Refuses while the schema
+   * JSON is invalid (rewriting from the parsed, empty list would wipe the
+   * user's half-finished edit), while a rename can't update invalid rules
+   * JSON, and when a changed field's path would collide with another's.
+   * Returns an error message, or '' on success.
+   */
+  function editSchema(edit: (fields: SchemaField[]) => SchemaField[]): string {
+    if (schemaError.value) return 'Fix the invalid schema JSON before editing the form.'
+    const before = schemaFields.value
+    const after = edit(before)
+
+    const renames: [string, string][] = []
+    for (const f of after) {
+      const old = before.find((o) => o.key === f.key)
+      if (old && rulePath(old) === rulePath(f)) continue
+      const clash = pathClash(f, after)
+      if (clash) {
+        return `"${f.label || f.key}" would read as ${rulePath(f)}, which "${clash.label || clash.key}" already uses.`
+      }
+      if (old) renames.push([rulePath(old), rulePath(f)])
+    }
+    if (renames.length && rulesError.value) {
+      return 'Fix the invalid rules JSON first — renaming updates the rules that read this field.'
+    }
+
+    schemaText.value = JSON.stringify(after, null, 2)
+    if (renames.length) {
+      const rules = rulesConfig.value.map((r) => ({
+        ...r,
+        logic: renames.reduce(
+          (l, [from, to]) => renameVar(l, from, to),
+          r.logic as unknown,
+        ) as Rule['logic'],
+      }))
+      rulesText.value = JSON.stringify(rules, null, 2)
+    }
+    return ''
+  }
+
+  /** "New radio field", numbered if needed so its rule path is free in `group`. */
+  function placeholderLabel(type: string, group = ''): string {
+    const noun = typeNoun(type)
+    const probe: SchemaField = { key: '', label: `New ${noun} field`, type, group }
+    for (let i = 2; pathClash(probe, schemaFields.value); i++) probe.label = `New ${noun} field ${i}`
+    return probe.label
+  }
+
+  /**
+   * Append a field of the given FormKit type with a unique key. Without a
+   * `label` it gets a free placeholder one; a given label that clashes is
+   * refused rather than silently renumbered.
+   */
+  function addField(
+    type: string,
+    group = '',
+    extra: Pick<Partial<SchemaField>, 'label' | 'options'> = {},
+  ): string {
+    const fields = schemaFields.value
+    const base = type.replace(/-(\w)/g, (_, c: string) => c.toUpperCase())
+    let n = 1
+    while (fields.some((f) => f.key === `${base}${n}`)) n++
+    const field: SchemaField = {
+      key: `${base}${n}`,
+      label: extra.label || placeholderLabel(type, group),
+      type,
+    }
+    if (extra.options) field.options = extra.options
+    else if (type === 'select' || type === 'radio') field.options = ['Option 1', 'Option 2']
+    if (group) field.group = group
+    const error = editSchema((fs) => [...fs, field])
+    if (!error) emptyGroups.value = emptyGroups.value.filter((g) => g !== group)
+    return error
+  }
+
+  function renameField(key: string, label: string): string {
+    return editSchema((fs) => fs.map((f) => (f.key === key ? { ...f, label } : f)))
+  }
+
+  /** Remove a field. Its fieldset stays on screen, empty, if it was the last one. */
+  function removeField(key: string): string {
+    const group = schemaFields.value.find((f) => f.key === key)?.group
+    const error = editSchema((fs) => fs.filter((f) => f.key !== key))
+    if (error) return error
+    // Drop the value once the input has unmounted: its `preserve` prop would
+    // write the value straight back if it were removed while still mounted.
+    nextTick(() => {
+      const next = { ...formData.value }
+      delete next[key]
+      formData.value = next
+    })
+    if (group && !schemaFields.value.some((f) => f.group === group)) {
+      emptyGroups.value = [...emptyGroups.value, group]
+    }
+    return ''
+  }
+
+  /** Add an empty group with a unique placeholder name, returned for editing. */
+  function addGroup(): string {
+    const taken = new Set([...schemaFields.value.map((f) => f.group), ...emptyGroups.value])
+    let name = 'New group'
+    for (let n = 2; taken.has(name); n++) name = `New group ${n}`
+    emptyGroups.value = [...emptyGroups.value, name]
+    return name
+  }
+
+  /** Rename a group across its fields. Renaming onto an existing group merges them. */
+  function renameGroup(from: string, to: string): string {
+    const error = editSchema((fs) => fs.map((f) => (f.group === from ? { ...f, group: to } : f)))
+    if (error) return error
+    const renamed = new Set(emptyGroups.value.map((g) => (g === from ? to : g)))
+    emptyGroups.value = [...renamed].filter((g) => !schemaFields.value.some((f) => f.group === g))
+    return ''
+  }
+
   // --- Persistence ----------------------------------------------------------
   function persist(): void {
     saveCache({
@@ -232,11 +424,22 @@ export const useEngineStore = defineStore('engine', () => {
     dataSources,
     schemaFields,
     rulesConfig,
+    ruleFormData,
+    formPathError,
     ruleMatchInfo,
     sourceResults,
     grandTotal,
     anyLoading,
     fetchAll,
     fetchOne,
+    exportConfig,
+    importConfig,
+    emptyGroups,
+    placeholderLabel,
+    addField,
+    renameField,
+    removeField,
+    addGroup,
+    renameGroup,
   }
 })
