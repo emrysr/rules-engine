@@ -104,8 +104,8 @@ function addGroup() {
               </FormKit>
               <p v-if="!g.fields.length" class="help">No fields yet.</p>
               <div v-if="g.legend" class="form-group-actions">
-                <button type="button" class="button is-primary" commandfor="field-type-menu"
-                  command="toggle-popover" :data-group="g.legend">
+                <button type="button" class="button" commandfor="field-type-menu" command="toggle-popover"
+                  :data-group="g.legend">
                   Add
                 </button>
               </div>
