@@ -14,3 +14,27 @@ public/workbox-*.js
 .idea/
 *.log
 npm-debug.log*
+
+# Environment files and secrets — keep an .env.example if one is ever needed
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# AI assistant local config (launch/permission settings, local paths)
+.claude/
+
+# Python caches from scripts/make-icons.py
+__pycache__/
+*.py[cod]
+.venv/
+
+# Tooling caches and OS files
+*.tsbuildinfo
+coverage/
+.eslintcache
+Thumbs.db
+desktop.ini
