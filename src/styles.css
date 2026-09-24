@@ -1,0 +1,27 @@
+textarea.code {
+  font-family: monospace;
+}
+
+pre.payload {
+  max-height: 220px;
+  overflow: auto;
+}
+
+details.box {
+  margin-bottom: 1rem;
+}
+
+details > summary {
+  list-style: revert;
+}
+
+details details {
+  margin: 0.75rem 0 0.25rem 0;
+  border-left: 3px solid #dbdbdb;
+  padding-left: 0.75rem;
+}
+
+.rule-row {
+  border-bottom: 1px solid #eee;
+  padding: 0.4rem 0;
+}
