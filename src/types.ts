@@ -39,6 +39,8 @@ export interface SchemaField {
   /** Any shape FormKit accepts; the form editor writes FieldOption pairs. */
   options?: string[] | Record<string, string> | FieldOption[]
   default?: unknown
+  /** What the field is for, shown under it; carried into the FormKit schema. */
+  help?: string
   /**
    * Extra Bulma classes, e.g. "is-primary is-rounded is-small". Added to the
    * element Bulma expects them on: the div.select wrapper for selects, the

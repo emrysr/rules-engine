@@ -2,6 +2,7 @@
 import type { SchemaField } from '@/types'
 import { rulePath } from '@/paths'
 import { useEngineStore } from '@/stores/engine'
+import HelpEdit from './HelpEdit.vue'
 import InlineEdit from './InlineEdit.vue'
 
 /**
@@ -10,6 +11,8 @@ import InlineEdit from './InlineEdit.vue'
  * `options` is bound only when set: FormKit reads an explicit
  * `options: undefined` as "has options" and a checkbox then crashes.
  * `preserve` keeps a value when its input remounts (e.g. a group rename).
+ * The help section is the field's own help text, editable in place, with
+ * the path rules read it by underneath.
  */
 defineProps<{ fields: SchemaField[] }>()
 const emit = defineEmits<{ error: [message: string] }>()
@@ -41,6 +44,13 @@ function labelTag(f: SchemaField): string {
         <button type="button" class="delete" title="Delete field" :aria-label="`Delete ${f.label || f.key}`"
           @click.prevent="emit('error', store.removeField(f.key))"></button>
       </component>
+    </template>
+    <template #help="context">
+      <div :id="`help-${context.id}`" class="field-help">
+        <HelpEdit :text="f.help ?? ''" :label="f.label || f.key"
+          @save="(t) => emit('error', store.setFieldHelp(f.key, t))" />
+        <p class="field-help-path"><code>{{ rulePath(f) }}</code></p>
+      </div>
     </template>
   </FormKit>
   <p v-if="!fields.length" class="help">No fields yet.</p>

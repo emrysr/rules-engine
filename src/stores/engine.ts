@@ -579,6 +579,17 @@ export const useEngineStore = defineStore('engine', () => {
     return editSchema((fs) => fs.map((f) => (f.key === key ? { ...f, label } : f)))
   }
 
+  /** Set a field's help text; empty removes it. */
+  function setFieldHelp(key: string, help: string): string {
+    return editSchema((fs) =>
+      fs.map((f) => {
+        if (f.key !== key) return f
+        const { help: _, ...rest } = f
+        return help ? { ...rest, help } : rest
+      }),
+    )
+  }
+
   /** Remove a field. Its fieldset stays on screen, empty, if it was the last one. */
   function removeField(key: string): string {
     const group = schemaFields.value.find((f) => f.key === key)?.group
@@ -952,6 +963,7 @@ export const useEngineStore = defineStore('engine', () => {
     placeholderLabel,
     addField,
     renameField,
+    setFieldHelp,
     removeField,
     addGroup,
     renameGroup,

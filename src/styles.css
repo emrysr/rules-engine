@@ -425,3 +425,47 @@ label.radio > span:last-child {
 .source-status {
   align-items: center;
 }
+
+/* A form field's help text, edited in place, with its rule path underneath. */
+.field-help {
+  margin-top: 0.25rem;
+}
+
+.help-edit {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--bulma-text);
+  font: inherit;
+  font-size: 0.8rem;
+  text-align: left;
+  white-space: pre-line;
+  cursor: text;
+}
+
+.help-edit:hover {
+  text-decoration: underline dotted;
+}
+
+.help-edit.is-empty {
+  color: var(--bulma-text-weak);
+  font-style: italic;
+}
+
+.help-edit-input {
+  font-size: 0.8rem;
+}
+
+.field-help-path {
+  margin-top: 0.125rem;
+  font-size: 0.7rem;
+  color: var(--bulma-text-weak);
+}
+
+.field-help-path code {
+  padding: 0;
+  background: none;
+  color: inherit;
+}

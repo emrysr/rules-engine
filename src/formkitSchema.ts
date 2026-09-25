@@ -19,6 +19,7 @@ function fieldNode(f: SchemaField): SchemaNode {
     label: f.label || f.key,
   }
   if (f.options) node.options = f.options
+  if (f.help) node.help = f.help
   if (f.default !== undefined) node.value = f.default
   // As in the Options Form: selects take extra classes on their wrapper.
   if (f.classes) node[f.type === 'select' ? 'innerClass' : 'inputClass'] = f.classes

@@ -8,8 +8,22 @@ export const defaultSources: DataSource[] = [
 ]
 
 export const defaultSchema: SchemaField[] = [
-  { key: 'minRating', label: 'Minimum product rating', type: 'number', default: 4, group: 'Products' },
-  { key: 'minAge', label: 'Minimum user age', type: 'number', default: 25, group: 'Users' },
+  {
+    key: 'minRating',
+    label: 'Minimum product rating',
+    type: 'number',
+    default: 4,
+    group: 'Products',
+    help: 'Products must be rated above this (highRating).',
+  },
+  {
+    key: 'minAge',
+    label: 'Minimum user age',
+    type: 'number',
+    default: 25,
+    group: 'Users',
+    help: 'Customers younger than this are left out of the result (adultUser).',
+  },
   {
     key: 'bloodType',
     label: 'User blood type',
@@ -17,6 +31,7 @@ export const defaultSchema: SchemaField[] = [
     options: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'],
     default: 'O+',
     group: 'Users',
+    help: 'Only users with this blood type, when bloodTypeMatch is switched on.',
   },
   {
     key: 'category',
@@ -34,8 +49,16 @@ export const defaultSchema: SchemaField[] = [
     ],
     default: 'smartphones',
     group: 'Products',
+    help: 'Products in this category (categoryMatch).',
   },
-  { key: 'productId', label: 'Product ID', type: 'number', default: 100, group: 'Carts' },
+  {
+    key: 'productId',
+    label: 'Product ID',
+    type: 'number',
+    default: 100,
+    group: 'Carts',
+    help: 'The product whose buyers the result lists (hasProduct). 100 is Apple AirPods.',
+  },
 ]
 
 export const defaultRules: Rule[] = [
