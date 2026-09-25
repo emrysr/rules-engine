@@ -105,9 +105,13 @@ src/
       rules + form defaults in a single action
 - [x] **Named config presets** - save/recall e.g. "Desirable Campervan", "Holiday
       Activities" in the Configuration panel, kept in `localStorage`
+- [ ] **Data sources from JSON or JS fragments** - paste the data (or a script that
+      returns it) as well as fetching it from a URL
+- [ ] **Edit form field options** - change an existing choice field's options, not only
+      when adding it
+- [ ] **Rule combiner in the Results panel** - build the result query from the rules with
+      AND / OR, e.g. (highRating and inStock), or (bloodTypeMatch or adultUser)
 - [ ] **AND / OR groups** in the rule builder, so one rule can hold several comparisons
-- [ ] **Edit an existing choice field's options** (the options dialog only runs when
-      adding)
 - [ ] **A Bulma dialog** in place of the browser's confirm prompts
 
 Known rough edge: the full Bulma stylesheet is ~710 KB uncompressed (72 KB gzipped)

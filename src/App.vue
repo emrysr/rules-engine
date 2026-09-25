@@ -64,17 +64,26 @@ onMounted(() => store.fetchAll())
           <s>Hide the raw config JSON - the whole setup moves in and out through Import / Export</s>
         </li>
         <li>
+          <s>Save / recall named config presets (e.g. "Desirable Campervan", "Holiday Activities")
+          via local storage</s>
+        </li>
+        <li>
+          Data sources from JSON or JS fragments - paste the data (or a script that returns it)
+          as well as fetching it from a URL
+        </li>
+        <li>
+          Edit form field options - change an existing choice field's options, not only when
+          adding it
+        </li>
+        <li>
+          Rule combiner in the Results panel - build the result query from the rules with AND /
+          OR, e.g. (highRating and inStock), or (bloodTypeMatch or adultUser)
+        </li>
+        <li>
           AND / OR groups in the rule builder, so one rule can hold several comparisons
         </li>
         <li>
-          Edit an existing choice field's options (the options dialog only runs when adding)
-        </li>
-        <li>
           Replace the browser's confirm prompts with a Bulma dialog
-        </li>
-        <li>
-          <s>Save / recall named config presets (e.g. "Desirable Campervan", "Holiday Activities")
-          via local storage</s>
         </li>
       </ul>
     </div>
