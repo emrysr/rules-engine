@@ -91,7 +91,7 @@ function deleteGroup(name: string, fields: SchemaField[]) {
       <p v-if="store.formPathError" class="help is-warning mb-3">{{ store.formPathError }}</p>
 
       <FormKit v-model="store.formData" type="group">
-        <div class="fixed-grid has-1-cols-mobile has-2-cols-tablet has-3-cols-desktop">
+        <div class="fixed-grid has-1-cols-mobile has-2-cols-tablet has-4-cols-desktop">
           <div class="grid">
             <template v-for="(g, i) in fieldGroups" :key="g.legend ?? ''">
               <EditableFieldset v-if="g.legend" :legend="g.legend" noun="group" :auto-edit="g.legend === newGroup"

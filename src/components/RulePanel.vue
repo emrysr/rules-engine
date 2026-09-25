@@ -144,7 +144,7 @@ function usedIn(source: string) {
         The saved rules are invalid JSON - import a config to replace them.
       </p>
 
-      <div class="fixed-grid has-1-cols-mobile has-2-cols-tablet has-3-cols-desktop">
+      <div class="fixed-grid has-1-cols-mobile has-2-cols-tablet has-4-cols-desktop">
         <div class="grid">
           <EditableFieldset v-for="(r, i) in store.rulesConfig" :key="r.key" :legend="r.key" noun="rule"
             :auto-edit="r.key === newRule" :can-move-left="i > 0" :can-move-right="i < lastIndex"
@@ -205,7 +205,7 @@ function usedIn(source: string) {
         <strong>Copy JSON</strong> copies one JSON Logic query per source, with each rule's logic
         written in, ready to paste into another app.
       </p>
-      <div class="fixed-grid has-1-cols-mobile has-2-cols-tablet">
+      <div class="fixed-grid has-1-cols-mobile has-2-cols-tablet has-4-cols-desktop">
         <div class="grid">
           <fieldset v-for="s in store.listSources" :key="s.key" class="cell form-group">
             <legend class="label">{{ s.key }}</legend>

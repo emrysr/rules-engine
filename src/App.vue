@@ -28,8 +28,8 @@ onMounted(() => store.fetchAll())
 
   <div class="container mt-4 mb-6 px-4">
     <ConfigPanel />
-    <SourcesPanel />
     <FormPanel />
+    <SourcesPanel />
     <RulePanel />
     <PipelinesPanel />
     <ResultsPanel />

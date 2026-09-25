@@ -112,7 +112,7 @@ function removeSource(key: string) {
         The saved data sources are invalid JSON - import a config to replace them.
       </p>
 
-      <div class="fixed-grid has-1-cols-mobile has-2-cols-tablet has-3-cols-desktop">
+      <div class="fixed-grid has-1-cols-mobile has-2-cols-tablet has-4-cols-desktop">
         <div class="grid">
           <EditableFieldset v-for="(s, i) in store.dataSources" :key="s.key" :legend="s.key" noun="source"
             :auto-edit="s.key === newSource" :can-move-left="i > 0" :can-move-right="i < lastIndex"
