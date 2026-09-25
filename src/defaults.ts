@@ -64,6 +64,12 @@ export const defaultRules: Rule[] = [
     logic: { '>=': [{ var: 'age' }, { var: 'formData.users.minimum_user_age' }] },
   },
   {
+    key: 'hasProduct',
+    source: 'carts',
+    enabled: true,
+    logic: { some: [{ var: 'products' }, { '==': [{ var: 'id' }, { var: 'formData.carts.product_id' }] }] },
+  },
+  {
     key: 'bloodTypeMatch',
     source: 'users',
     enabled: false,
@@ -72,22 +78,16 @@ export const defaultRules: Rule[] = [
 ]
 
 /**
- * The customers who bought a product: carts holding it give their buyers'
- * user ids, then the users (as their Source Filter leaves them) with one of
- * those ids give their first and last names.
+ * The customers who bought a product: the carts Source Filter keeps the
+ * carts holding it (hasProduct), Buyers takes their user ids, then the
+ * users (as their Source Filter leaves them) with one of those ids give
+ * their first and last names.
  */
 export const defaultPipelines: Pipeline[] = [
   {
     name: 'Buyers',
     blocks: [
       { type: 'source', source: 'carts' },
-      {
-        type: 'filter',
-        condition: {
-          op: 'and',
-          items: [{ some: [{ var: 'products' }, { '==': [{ var: 'id' }, { var: 'formData.carts.product_id' }] }] }],
-        },
-      },
       { type: 'map', path: 'userId' },
     ],
   },
@@ -113,6 +113,7 @@ export const defaultSectionOpen: Record<SectionName, boolean> = {
 /**
  * Bump when the persisted shape changes so stale caches are ignored. v4: rules
  * read form values by snake_cased legend + label, not by field key. v5:
- * pipelines start from filtered list sources, and the demo gains carts.
+ * pipelines start from filtered list sources, and the demo gains carts. v6:
+ * the demo's carts are filtered by product in their Source Filter.
  */
-export const STORAGE_KEY = 'cdre-config-v5'
+export const STORAGE_KEY = 'cdre-config-v6'

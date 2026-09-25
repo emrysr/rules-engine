@@ -1,20 +1,20 @@
 <script setup lang="ts">
-import { computed, useId } from 'vue'
-import jsonLogic from 'json-logic-js'
-import { comparisonLogic, entryPaths } from '@/comparison'
+import { computed } from 'vue'
+import { comparisonLogic } from '@/comparison'
 import { hasItemLogic, parseHasItem } from '@/pipeline'
-import type { Condition, HasItem } from '@/pipeline'
+import type { Condition } from '@/pipeline'
+import { canCheckList, fieldPaths, itemsAreLists, itemsArePlain, listPaths } from '@/items'
 import ComparisonRow from './ComparisonRow.vue'
+import ListCheckRow from './ListCheckRow.vue'
 
 /**
- * A pipeline block's condition: rows joined all of / any of / none of. A row
- * is a comparison, or "has an item where": one of the item's list fields has
- * an item passing a condition of its own, edited by a nested editor.
- * Emits the whole updated condition.
+ * A condition: rows joined all of / any of / none of. A row compares a
+ * field, or checks a list on the item (see ListCheckRow), which nests a
+ * condition of its own. Emits the whole updated condition.
  */
 const props = defineProps<{
   condition: Condition
-  /** The items being tested (a sample is enough), for field suggestions. */
+  /** The items being tested (a sample is enough), for the pickers. */
   items: unknown[]
   /** Pipelines whose result the rows can read, by name. */
   pipelines: string[]
@@ -22,39 +22,12 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{ update: [condition: Condition] }>()
 
-const listId = useId()
+const itemPaths = computed(() => fieldPaths(props.items))
+const plain = computed(() => itemsArePlain(props.items))
+const canList = computed(() => canCheckList(props.items))
 
-function read(item: unknown, path: string): unknown {
-  return jsonLogic.apply({ var: path }, item as Record<string, unknown>)
-}
-
-const objects = computed(
-  () => props.items.filter((i) => i && typeof i === 'object' && !Array.isArray(i)) as Record<string, unknown>[],
-)
-
-const itemPaths = computed(() => entryPaths(objects.value))
-
-/** The items are lists themselves (a map to several fields gives these), so no list field is needed. */
-const itemsAreLists = computed(() => props.items.length > 0 && props.items.slice(0, 20).every(Array.isArray))
-
-/** The items are plain values ("Sofia", 4), with no fields: an empty field reads the value itself. */
-const itemsArePlain = computed(
-  () => props.items.length > 0 && props.items.slice(0, 20).every((i) => i === null || typeof i !== 'object'),
-)
-
-/** Item fields holding lists, for "has an item where". */
-const listPaths = computed(() =>
-  itemPaths.value.filter((p) => objects.value.slice(0, 20).some((o) => Array.isArray(read(o, p)))),
-)
-
-/** The inner items of a list field across the items, for the nested editor's suggestions. */
-function innerItems(path: string): unknown[] {
-  // An empty path reads the item itself, which is the list when the items are lists.
-  return props.items.slice(0, 20).flatMap((item) => {
-    const list = path ? (objects.value.includes(item as Record<string, unknown>) ? read(item, path) : undefined) : item
-    return Array.isArray(list) ? list : []
-  })
-}
+/** How the rows join only matters with two or more (or when it's "none of", which flips one). */
+const showJoin = computed(() => props.condition.items.length > 1 || props.condition.op === 'none')
 
 function setItems(items: unknown[]) {
   emit('update', { ...props.condition, items })
@@ -64,27 +37,28 @@ function setRow(i: number, row: unknown) {
   setItems(props.condition.items.map((r, j) => (j === i ? row : r)))
 }
 
-function setHasItem(i: number, has: HasItem) {
-  setRow(i, hasItemLogic(has))
-}
-
-function addComparison() {
-  const row = comparisonLogic({
-    op: '==',
-    left: { kind: 'entry', path: itemPaths.value[0] ?? '' },
-    right: { kind: 'value', value: '' },
-  })
-  setItems([...props.condition.items, row])
-}
-
-function addHasItem() {
-  setItems([...props.condition.items, hasItemLogic({ path: listPaths.value[0] ?? '', condition: { op: 'and', items: [] } })])
+function addRow(e: Event) {
+  const select = e.target as HTMLSelectElement
+  if (select.value === 'compare') {
+    setItems([
+      ...props.condition.items,
+      comparisonLogic({
+        op: '==',
+        left: { kind: 'entry', path: itemPaths.value[0] ?? '' },
+        right: { kind: 'value', value: '' },
+      }),
+    ])
+  } else if (select.value === 'list') {
+    const path = itemsAreLists(props.items) ? '' : (listPaths(props.items)[0] ?? '')
+    setItems([...props.condition.items, hasItemLogic({ path, mode: 'some', condition: { op: 'and', items: [] } })])
+  }
+  select.value = ''
 }
 </script>
 
 <template>
-  <div class="condition-editor">
-    <div class="field">
+  <div class="condition-editor" :class="{ 'has-join': showJoin }">
+    <div v-if="showJoin" class="field">
       <div class="control">
         <div class="select">
           <select :value="condition.op" :aria-label="`${label}: combine with`"
@@ -100,37 +74,23 @@ function addHasItem() {
     <div v-for="(row, i) in condition.items" :key="i" class="condition-row">
       <button type="button" class="delete condition-row-remove" :aria-label="`Remove condition ${i + 1}`"
         title="Remove condition" @click="setItems(condition.items.filter((_, j) => j !== i))"></button>
-      <template v-if="parseHasItem(row)">
-        <div class="field">
-          <label class="label" :for="`${listId}-${i}`">List field</label>
-          <div class="control">
-            <input :id="`${listId}-${i}`" class="input" type="text" :list="`${listId}-lists`"
-              :value="parseHasItem(row)!.path"
-              :placeholder="itemsAreLists ? 'Empty: each item from the block above' : 'e.g. products'"
-              @change="setHasItem(i, { ...parseHasItem(row)!, path: ($event.target as HTMLInputElement).value.trim() })" />
-          </div>
-          <p class="help">has an item where:</p>
-        </div>
-        <ConditionEditor :condition="parseHasItem(row)!.condition" :items="innerItems(parseHasItem(row)!.path)"
-          :pipelines="pipelines" :label="`${label} condition ${i + 1}`"
-          @update="(condition) => setHasItem(i, { ...parseHasItem(row)!, condition })" />
-      </template>
+      <ListCheckRow v-if="parseHasItem(row)" :check="parseHasItem(row)!" :items="items" :pipelines="pipelines"
+        :label="`${label} condition ${i + 1}`" @update="(check) => setRow(i, hasItemLogic(check))" />
       <ComparisonRow v-else :logic="row" :entry-paths="itemPaths" entry-label="Item field" :pipelines="pipelines"
-        :entry-placeholder="itemsArePlain ? 'Empty: the value itself' : undefined"
+        :entry-placeholder="plain ? 'Empty: the value itself' : undefined"
         :label="`${label} condition ${i + 1}`" @update="(logic) => setRow(i, logic)" />
     </div>
-    <p v-if="!condition.items.length" class="help mb-3">No conditions yet - every item passes.</p>
-    <datalist :id="`${listId}-lists`">
-      <option v-for="p in listPaths" :key="p" :value="p" />
-    </datalist>
+    <p v-if="!condition.items.length" class="help mb-3">No conditions yet - everything passes.</p>
 
-    <div class="field is-grouped is-grouped-multiline">
+    <div class="field">
       <div class="control">
-        <button type="button" class="button" @click="addComparison">Add condition</button>
-      </div>
-      <div class="control">
-        <button type="button" class="button" title="Test a list on each item, e.g. an order's products"
-          @click="addHasItem">Add "has an item where"</button>
+        <div class="select">
+          <select :aria-label="`${label}: add a condition`" @change="addRow">
+            <option value="">Add condition…</option>
+            <option value="compare">Compare a field (e.g. price is at least 10)</option>
+            <option v-if="canList" value="list">Check a list (e.g. products has an item where id = 100)</option>
+          </select>
+        </div>
       </div>
     </div>
   </div>

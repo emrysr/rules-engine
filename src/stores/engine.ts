@@ -1,11 +1,10 @@
 import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { defineStore } from 'pinia'
-import jsonLogic from 'json-logic-js'
 import { parseConfig } from '@/config'
 import { typeNoun } from '@/fieldTypes'
 import { compileGroup, evaluateGroup, isRuleGroup, mapKeys } from '@/combine'
 import { entryPaths } from '@/comparison'
-import { compilePipeline, isPipeline, renamePipelineRefs, runPipelines } from '@/pipeline'
+import { compilePipeline, isPipeline, renamePipelineRefs, rowPasses, runPipelines } from '@/pipeline'
 import type { Block, Pipeline } from '@/pipeline'
 import {
   FORM_NAMESPACE,
@@ -269,15 +268,15 @@ export const useEngineStore = defineStore('engine', () => {
   /**
    * Entry fields are spread at the top level so rules read them directly;
    * values sources sit under their keys and live form values under `formData`,
-   * so every input is in the rule's scope. A rule that throws (bad operator,
-   * missing field) counts as no match rather than breaking the whole pass.
-   * The result is judged by JSON Logic's truthiness, where an empty list is
-   * false (JavaScript's `!!` would call it true).
+   * so every input is in the rule's scope - inside a check of a list on the
+   * entry too, as in pipelines (see rowPasses). A rule that throws (bad
+   * operator, missing field) counts as no match rather than breaking the
+   * whole pass. The result is judged by JSON Logic's truthiness, where an
+   * empty list is false (JavaScript's `!!` would call it true).
    */
   function evaluate(rule: Rule, entry: Entry): boolean {
     try {
-      const data = { ...entry, ...valueScope.value, [FORM_NAMESPACE]: ruleFormData.value }
-      return jsonLogic.truthy(jsonLogic.apply(rule.logic, data))
+      return rowPasses(rule.logic, { ...valueScope.value, [FORM_NAMESPACE]: ruleFormData.value }, entry)
     } catch {
       return false
     }

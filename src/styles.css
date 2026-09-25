@@ -345,13 +345,23 @@ label.radio > span:last-child {
 }
 
 /* Rows sit indented under the all of / any of / none of they join, and a
-   "has an item where" condition hangs off its list field on a guide line,
-   so each level of nesting reads as its own step in. */
-.condition-editor > .condition-row {
+   "check a list" row's condition hangs off it on a guide line, so each
+   level of nesting reads as its own step in. */
+.condition-editor.has-join > .condition-row {
   margin-left: 1rem;
 }
 
-.condition-editor .condition-editor {
+/* A check a list row reads as a sentence: [products] [has at least one item] where: */
+.list-check-head {
+  align-items: center;
+}
+
+.list-check-where {
+  display: inline-block;
+  padding-block: calc(0.5em - 1px);
+}
+
+.list-check > .condition-editor {
   margin-left: 0.25rem;
   padding-left: 0.75rem;
   border-left: 2px solid var(--bulma-border);
@@ -382,11 +392,11 @@ label.radio > span:last-child {
     right: 0.5rem;
   }
 
-  .condition-editor > .condition-row {
+  .condition-editor.has-join > .condition-row {
     margin-left: 0.5rem;
   }
 
-  .condition-editor .condition-editor {
+  .list-check > .condition-editor {
     margin-left: 0;
     padding-left: 0.5rem;
   }

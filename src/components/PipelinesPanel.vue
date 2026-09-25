@@ -80,7 +80,7 @@ function removePipeline(p: Pipeline) {
         one's output is the pipeline's result. Start from a source - a list source comes through
         its Source Filter - then filter, map, test or count. Inside a block, conditions read each
         item's own fields as well as the sources and form values, and can check a list on the
-        item with <strong>has an item where</strong>. A pipeline can also read the result of the
+        item with <strong>Check a list</strong>. A pipeline can also read the result of the
         pipeline directly above it (as <strong>Pipeline result</strong>, e.g. <em>id is one of
         Buyers</em>), so the pipelines build towards one answer, shown under Results. They stay in
         the order they're added, as each one is built on the one above.

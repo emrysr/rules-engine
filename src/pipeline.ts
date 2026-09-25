@@ -94,23 +94,34 @@ export function parseCondition(logic: unknown): Condition {
   return { op: 'and', items: [logic] }
 }
 
-/** A "has an item where" row: `path`, a list on the item, has an item passing `condition`. */
+/**
+ * A "check a list" row: `path`, a list on the item (or the item itself when
+ * empty), has at least one / every / no item passing `condition`. Compiles
+ * to JSON Logic's `some` / `all` / `none`.
+ */
 export interface HasItem {
   path: string
+  mode: 'some' | 'all' | 'none'
   condition: Condition
 }
 
+export const HAS_ITEM_MODES: { mode: HasItem['mode']; label: string }[] = [
+  { mode: 'some', label: 'has at least one item' },
+  { mode: 'all', label: 'has every item' },
+  { mode: 'none', label: 'has no item' },
+]
+
 /** The row as a HasItem, or null for any other row (a comparison). */
 export function parseHasItem(row: unknown): HasItem | null {
-  if (!row || typeof row !== 'object' || Array.isArray(row)) return null
-  const args = (row as { some?: unknown }).some
-  if (Object.keys(row).length !== 1 || !Array.isArray(args) || args.length !== 2) return null
+  if (!row || typeof row !== 'object' || Array.isArray(row) || Object.keys(row).length !== 1) return null
+  const [mode, args] = Object.entries(row)[0]
+  if (!HAS_ITEM_MODES.some((m) => m.mode === mode) || !Array.isArray(args) || args.length !== 2) return null
   const path = (args[0] as { var?: unknown } | null)?.var
-  return typeof path === 'string' ? { path, condition: parseCondition(args[1]) } : null
+  return typeof path === 'string' ? { path, mode: mode as HasItem['mode'], condition: parseCondition(args[1]) } : null
 }
 
 export function hasItemLogic(h: HasItem): unknown {
-  return { some: [{ var: h.path }, compileCondition(h.condition)] }
+  return { [h.mode]: [{ var: h.path }, compileCondition(h.condition)] }
 }
 
 /** A map block's fields: its path split on commas. */
@@ -245,21 +256,28 @@ function itemScope(scope: Record<string, unknown>, item: unknown): unknown {
 }
 
 /**
- * Whether the item passes. "Has an item where" rows are run here rather
- * than by json-logic-js, so the inputs stay in scope for the inner items too.
+ * Whether one row passes for the item. "Check a list" rows are run here
+ * rather than by json-logic-js, so the inputs (form values, sources) stay in
+ * scope for the list's items too. As JSON Logic, "every" of an empty list
+ * is false. Used by Source Filter rules as well as pipeline conditions.
  */
-function passes(condition: Condition, scope: Record<string, unknown>, item: unknown): boolean {
+export function rowPasses(row: unknown, scope: Record<string, unknown>, item: unknown): boolean {
+  const has = parseHasItem(row)
   const data = itemScope(scope, item)
-  const rowPasses = (row: unknown): boolean => {
-    const has = parseHasItem(row)
-    if (!has) return jsonLogic.truthy(jsonLogic.apply(row as never, data as never))
-    const list = readPath(data, has.path)
-    return Array.isArray(list) && list.some((inner) => passes(has.condition, scope, inner))
-  }
+  if (!has) return jsonLogic.truthy(jsonLogic.apply(row as never, data as never))
+  const list = readPath(data, has.path)
+  if (!Array.isArray(list)) return false
+  const hits = list.filter((inner) => passes(has.condition, scope, inner)).length
+  return has.mode === 'some' ? hits > 0 : has.mode === 'all' ? list.length > 0 && hits === list.length : hits === 0
+}
+
+/** Whether the item passes the condition's rows, joined all / any / none. */
+function passes(condition: Condition, scope: Record<string, unknown>, item: unknown): boolean {
+  const check = (row: unknown) => rowPasses(row, scope, item)
   if (!condition.items.length) return true
-  if (condition.op === 'and') return condition.items.every(rowPasses)
-  if (condition.op === 'or') return condition.items.some(rowPasses)
-  return !condition.items.some(rowPasses)
+  if (condition.op === 'and') return condition.items.every(check)
+  if (condition.op === 'or') return condition.items.some(check)
+  return !condition.items.some(check)
 }
 
 /** Stop a block that reads a pipeline with no result, saying why. */

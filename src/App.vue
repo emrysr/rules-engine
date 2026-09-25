@@ -91,7 +91,7 @@ onMounted(() => store.fetchAll())
         </li>
         <li>
           <s>Source Filters feed pipelines, and pipelines build one result - a pipeline starts
-          from a filtered source, can check a list on each item ("has an item where"), and can
+          from a filtered source, can check a list on each item ("check a list"), and can
           read the result of the pipeline above it</s>
         </li>
         <li>
