@@ -218,16 +218,22 @@ export const useEngineStore = defineStore('engine', () => {
     return out
   })
 
+  /** Each source's entries that pass every enabled rule for it: the results. */
+  const matchedEntries = computed<Record<string, Entry[]>>(() => {
+    const out: Record<string, Entry[]> = {}
+    for (const src of dataSources.value) {
+      const active = rulesConfig.value.filter((r) => r.source === src.key && ruleToggles[r.key])
+      out[src.key] = (rawData[src.key] ?? []).filter((e) => active.every((r) => evaluate(r, e)))
+    }
+    return out
+  })
+
   const sourceResults = computed<Record<string, SourceResult>>(() => {
     const out: Record<string, SourceResult> = {}
     for (const src of dataSources.value) {
-      const entries = rawData[src.key] ?? []
-      const active = rulesConfig.value.filter(
-        (r) => r.source === src.key && ruleToggles[r.key],
-      )
       out[src.key] = {
-        total: entries.length,
-        matched: entries.filter((e) => active.every((r) => evaluate(r, e))).length,
+        total: (rawData[src.key] ?? []).length,
+        matched: matchedEntries.value[src.key].length,
       }
     }
     return out
@@ -665,6 +671,7 @@ export const useEngineStore = defineStore('engine', () => {
     ruleFormData,
     formPathError,
     ruleMatchInfo,
+    matchedEntries,
     sourceResults,
     grandTotal,
     anyLoading,

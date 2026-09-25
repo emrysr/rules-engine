@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useEngineStore } from '@/stores/engine'
 import CollapsibleBox from './CollapsibleBox.vue'
 import EditableFieldset from './EditableFieldset.vue'
+import EntryPreview from './EntryPreview.vue'
 import GridAddCell from './GridAddCell.vue'
 
 const store = useEngineStore()
@@ -12,10 +13,6 @@ const error = ref('')
 const newSource = ref('')
 
 const lastIndex = computed(() => store.dataSources.length - 1)
-
-function preview(key: string): string {
-  return JSON.stringify((store.rawData[key] ?? []).slice(0, 3), null, 2)
-}
 
 function addSource() {
   const result = store.addSource()
@@ -98,11 +95,7 @@ function removeSource(key: string) {
               </div>
             </div>
 
-            <details v-if="store.rawData[s.key]?.length">
-              <summary class="is-clickable">Preview</summary>
-              <pre class="payload">{{ preview(s.key) }}</pre>
-              <p class="help">Showing the first 3 of {{ store.rawData[s.key].length }} entries.</p>
-            </details>
+            <EntryPreview :entries="store.rawData[s.key] ?? []" />
 
             <template #actions>
               <button type="button" class="button" :class="{ 'is-loading': store.loading[s.key] }"

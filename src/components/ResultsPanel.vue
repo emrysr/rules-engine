@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useEngineStore } from '@/stores/engine'
 import CollapsibleBox from './CollapsibleBox.vue'
+import EntryPreview from './EntryPreview.vue'
 
 const store = useEngineStore()
 </script>
@@ -11,13 +12,9 @@ const store = useEngineStore()
       {{ store.grandTotal.matched }} / {{ store.grandTotal.total }}
       <span class="has-text-grey-light is-size-6">total entries match all enabled rules</span>
     </p>
-    <div class="content">
-      <ul>
-        <li v-for="(res, key) in store.sourceResults" :key="key">
-          <strong>{{ key }}</strong
-          >: {{ res.matched }} / {{ res.total }}
-        </li>
-      </ul>
+    <div v-for="(res, key) in store.sourceResults" :key="key" class="block">
+      <p><strong>{{ key }}</strong>: {{ res.matched }} / {{ res.total }}</p>
+      <EntryPreview :entries="store.matchedEntries[key] ?? []" label="Preview matches" />
     </div>
   </CollapsibleBox>
 </template>
