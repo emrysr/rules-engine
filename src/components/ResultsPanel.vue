@@ -10,7 +10,7 @@ const store = useEngineStore()
   <CollapsibleBox section="results" title="Results">
     <p class="title is-4 mt-3">
       {{ store.grandTotal.matched }} / {{ store.grandTotal.total }}
-      <span class="has-text-grey-light is-size-6">total entries match all enabled rules</span>
+      <span class="has-text-grey-light is-size-6">total entries match their source's combined rules</span>
     </p>
     <div v-for="(res, key) in store.sourceResults" :key="key" class="block">
       <p><strong>{{ key }}</strong>: {{ res.matched }} / {{ res.total }}</p>

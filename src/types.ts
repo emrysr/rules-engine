@@ -53,6 +53,15 @@ export interface Rule {
   logic: RulesLogic
 }
 
+/**
+ * How a source's rules combine into its result query: all of (`and`) or any
+ * of (`or`) its items, each a rule key or a nested group.
+ */
+export interface RuleGroup {
+  op: 'and' | 'or'
+  items: (string | RuleGroup)[]
+}
+
 /** An arbitrary record from a data source. Shape is only known at runtime. */
 export type Entry = Record<string, unknown>
 
@@ -76,6 +85,8 @@ export interface EngineConfig {
   sources: DataSource[]
   schema: SchemaField[]
   rules: Rule[]
+  /** How each source's rules combine, by source key; a source without one ANDs all its rules. */
+  combine?: Record<string, RuleGroup>
   formData?: Record<string, unknown>
 }
 
@@ -86,6 +97,7 @@ export interface PersistedState {
   rulesText: string
   formData: Record<string, unknown>
   ruleToggles: Record<string, boolean>
+  combine?: Record<string, RuleGroup>
   rawData: Record<string, Entry[]>
   sectionOpen: Record<SectionName, boolean>
 }

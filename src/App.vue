@@ -76,11 +76,12 @@ onMounted(() => store.fetchAll())
           adding it
         </li>
         <li>
-          Rule combiner in the Results panel - build the result query from the rules with AND /
-          OR, e.g. (highRating and inStock), or (bloodTypeMatch or adultUser)
+          <s>Rule combiner - build each source's result query from the rules with AND / OR
+          groups, e.g. (highRating and inStock), or (bloodTypeMatch or adultUser)</s>
         </li>
         <li>
-          AND / OR groups in the rule builder, so one rule can hold several comparisons
+          List-aware rules - some / all / none over list fields (like a product's tags), and
+          whether map / filter / reduce belong in the builder
         </li>
         <li>
           Replace the browser's confirm prompts with a Bulma dialog

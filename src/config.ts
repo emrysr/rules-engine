@@ -1,4 +1,5 @@
 import type { EngineConfig } from '@/types'
+import { isRuleGroup } from '@/combine'
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)
@@ -47,6 +48,14 @@ export function parseConfig(text: string): { config: EngineConfig } | { error: s
   const rules = value.rules as Record<string, unknown>[]
   const badLogic = rules.findIndex((r) => !('logic' in r))
   if (badLogic !== -1) return { error: `rules[${badLogic}] is missing "logic".` }
+
+  if (value.combine !== undefined) {
+    if (!isObject(value.combine)) return { error: '"combine" must be an object when present.' }
+    const bad = Object.entries(value.combine).find(([, g]) => !isRuleGroup(g))
+    if (bad) {
+      return { error: `combine.${bad[0]} must be { "op": "and" | "or", "items": [rule keys or groups] }.` }
+    }
+  }
 
   if (value.formData !== undefined && !isObject(value.formData)) {
     return { error: '"formData" must be an object when present.' }

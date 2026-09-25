@@ -227,6 +227,42 @@ label.radio > span:last-child {
   margin-top: 0.5rem;
 }
 
+/* Rule combination: an and/or group, its items, and groups nested inside,
+   each nested group indented behind a left rule. */
+.combine-group.is-nested {
+  border-left: 3px solid var(--bulma-border);
+  padding-left: 0.75rem;
+}
+
+.combine-items {
+  margin: 0 0 0.75rem;
+}
+
+.combine-items > li + li {
+  margin-top: 0.5rem;
+}
+
+.combine-rule {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--bulma-border);
+  border-radius: var(--bulma-radius);
+}
+
+.combine-rule-name {
+  font-weight: 600;
+  margin-right: auto;
+}
+
+/* Switched off (or not a rule here): still listed, but plainly not counting. */
+.combine-rule.is-off .combine-rule-name {
+  opacity: 0.55;
+  text-decoration: line-through;
+}
+
 /* A source's fetch status tag and link, centred on each other. */
 .source-status {
   align-items: center;

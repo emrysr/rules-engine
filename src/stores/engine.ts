@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import jsonLogic from 'json-logic-js'
 import { parseConfig } from '@/config'
 import { typeNoun } from '@/fieldTypes'
+import { compileGroup, evaluateGroup, isRuleGroup, mapKeys } from '@/combine'
 import {
   FORM_NAMESPACE,
   buildRuleData,
@@ -21,6 +22,7 @@ import type {
   Rule,
   SchemaField,
   SectionName,
+  RuleGroup,
   SourceResult,
 } from '@/types'
 import {
@@ -85,6 +87,12 @@ function extractList(resp: unknown, src: DataSource): Entry[] {
   return list
 }
 
+/** Keep only well-formed combinations from cached or imported data. */
+function validCombine(value: unknown): Record<string, RuleGroup> {
+  if (!value || typeof value !== 'object') return {}
+  return Object.fromEntries(Object.entries(value).filter(([, g]) => isRuleGroup(g)))
+}
+
 export const useEngineStore = defineStore('engine', () => {
   const cached = loadCache()
 
@@ -103,6 +111,12 @@ export const useEngineStore = defineStore('engine', () => {
   const errors = reactive<Record<string, string>>({})
   const formData = ref<Record<string, unknown>>(cached?.formData ?? {})
   const ruleToggles = reactive<Record<string, boolean>>(cached?.ruleToggles ?? {})
+  /**
+   * Each source's rule combination, by source key. A source without one uses
+   * all of its rules, ANDed (see combinationFor), so it's only stored once
+   * the user edits it.
+   */
+  const combine = ref<Record<string, RuleGroup>>(validCombine(cached?.combine))
   const sectionOpen = reactive<Record<SectionName, boolean>>({
     ...defaultSectionOpen,
     ...cached?.sectionOpen,
@@ -218,12 +232,48 @@ export const useEngineStore = defineStore('engine', () => {
     return out
   })
 
-  /** Each source's entries that pass every enabled rule for it: the results. */
+  /** A source's rule combination: the stored one, or all its rules ANDed. */
+  function combinationFor(source: string): RuleGroup {
+    return (
+      combine.value[source] ?? {
+        op: 'and',
+        items: rulesConfig.value.filter((r) => r.source === source).map((r) => r.key),
+      }
+    )
+  }
+
+  /** The source's rules that count in its combination: on its source and switched on. */
+  function liveRules(source: string): Map<string, Rule> {
+    return new Map(
+      rulesConfig.value.filter((r) => r.source === source && ruleToggles[r.key]).map((r) => [r.key, r]),
+    )
+  }
+
+  /** Each source's entries that pass its rule combination: the results. */
   const matchedEntries = computed<Record<string, Entry[]>>(() => {
     const out: Record<string, Entry[]> = {}
     for (const src of dataSources.value) {
-      const active = rulesConfig.value.filter((r) => r.source === src.key && ruleToggles[r.key])
-      out[src.key] = (rawData[src.key] ?? []).filter((e) => active.every((r) => evaluate(r, e)))
+      const group = combinationFor(src.key)
+      const live = liveRules(src.key)
+      out[src.key] = (rawData[src.key] ?? []).filter((e) =>
+        evaluateGroup(group, (key) => {
+          const rule = live.get(key)
+          return rule ? evaluate(rule, e) : undefined
+        }),
+      )
+    }
+    return out
+  })
+
+  /**
+   * Each source's combination as one JSON Logic expression, with its live
+   * rules' logic inlined: the query to paste into another app.
+   */
+  const compiledQueries = computed<Record<string, unknown>>(() => {
+    const out: Record<string, unknown> = {}
+    for (const src of dataSources.value) {
+      const live = liveRules(src.key)
+      out[src.key] = compileGroup(combinationFor(src.key), (key) => live.get(key)?.logic)
     }
     return out
   })
@@ -267,6 +317,7 @@ export const useEngineStore = defineStore('engine', () => {
         sources: dataSources.value,
         schema: schemaFields.value,
         rules: rulesConfig.value,
+        combine: Object.fromEntries(dataSources.value.map((s) => [s.key, combinationFor(s.key)])),
         formData: { ...formData.value },
       },
     }
@@ -289,6 +340,7 @@ export const useEngineStore = defineStore('engine', () => {
     schemaText.value = JSON.stringify(config.schema, null, 2)
     rulesText.value = JSON.stringify(config.rules, null, 2)
     formData.value = { ...config.formData }
+    combine.value = validCombine(config.combine)
     for (const key in ruleToggles) delete ruleToggles[key]
     emptyGroups.value = []
     seedFormData(config.schema)
@@ -550,7 +602,7 @@ export const useEngineStore = defineStore('engine', () => {
     const error = editSources((ss) => ss.map((s) => (s.key === from ? { ...s, key: to } : s)))
     if (error) return error
     editRules((rs) => rs.map((r) => (r.source === from ? { ...r, source: to } : r)))
-    for (const map of [rawData, loading, errors] as Record<string, unknown>[]) {
+    for (const map of [rawData, loading, errors, combine.value] as Record<string, unknown>[]) {
       if (from in map) {
         map[to] = map[from]
         delete map[from]
@@ -566,6 +618,7 @@ export const useEngineStore = defineStore('engine', () => {
     delete rawData[key]
     delete loading[key]
     delete errors[key]
+    delete combine.value[key]
     return ''
   }
 
@@ -594,33 +647,60 @@ export const useEngineStore = defineStore('engine', () => {
     return ''
   }
 
+  // --- Rule combinations ----------------------------------------------------
+  function setCombination(source: string, group: RuleGroup): void {
+    combine.value = { ...combine.value, [source]: group }
+  }
+
+  /** Rewrite rule keys across every stored combination (null drops the key). */
+  function mapCombinationKeys(fn: (key: string) => string | null): void {
+    combine.value = Object.fromEntries(Object.entries(combine.value).map(([s, g]) => [s, mapKeys(g, fn)]))
+  }
+
+  /** Add a rule to the end of its source's stored combination, if it has one. */
+  function joinCombination(source: string, key: string): void {
+    const group = combine.value[source]
+    if (group) setCombination(source, { ...group, items: [...group.items, key] })
+  }
+
   /** Append a match-everything rule on the first source, with a unique key. */
   function addRule(): { key: string } | { error: string } {
     let key = 'newRule'
     for (let n = 2; rulesConfig.value.some((r) => r.key === key); n++) key = `newRule${n}`
     const rule: Rule = { key, source: dataSources.value[0]?.key ?? '', enabled: true, logic: true }
     const error = editRules((rs) => [...rs, rule])
-    return error ? { error } : { key }
+    if (error) return { error }
+    joinCombination(rule.source, key)
+    return { key }
   }
 
+  /** Update a rule. Moving it to another source moves it between their combinations too. */
   function updateRule(key: string, patch: Partial<Omit<Rule, 'key'>>): string {
-    return editRules((rs) => rs.map((r) => (r.key === key ? { ...r, ...patch } : r)))
+    const from = rulesConfig.value.find((r) => r.key === key)?.source
+    const error = editRules((rs) => rs.map((r) => (r.key === key ? { ...r, ...patch } : r)))
+    if (error || patch.source === undefined || patch.source === from) return error
+    if (from && combine.value[from]) setCombination(from, mapKeys(combine.value[from], (k) => (k === key ? null : k)))
+    joinCombination(patch.source, key)
+    return ''
   }
 
-  /** Rename a rule, carrying its live toggle state over to the new key. */
+  /** Rename a rule, carrying its live toggle state and combination places over to the new key. */
   function renameRule(from: string, to: string): string {
     if (rulesConfig.value.some((r) => r.key === to)) return `There's already a rule called "${to}".`
     const error = editRules((rs) => rs.map((r) => (r.key === from ? { ...r, key: to } : r)))
     if (error) return error
     ruleToggles[to] = ruleToggles[from]
     delete ruleToggles[from]
+    mapCombinationKeys((k) => (k === from ? to : k))
     return ''
   }
 
   function removeRule(key: string): string {
     const error = editRules((rs) => rs.filter((r) => r.key !== key))
-    if (!error) delete ruleToggles[key]
-    return error
+    if (error) return error
+    delete ruleToggles[key]
+    mapCombinationKeys((k) => (k === key ? null : k))
+    return ''
   }
 
   /** Swap a rule with its neighbour: `step` -1 moves it earlier, 1 later. */
@@ -643,12 +723,13 @@ export const useEngineStore = defineStore('engine', () => {
       rulesText: rulesText.value,
       formData: formData.value,
       ruleToggles: { ...ruleToggles },
+      combine: combine.value,
       rawData: { ...rawData },
       sectionOpen: { ...sectionOpen },
     })
   }
 
-  watch([sourcesText, schemaText, rulesText, formData, ruleToggles, sectionOpen], persist, {
+  watch([sourcesText, schemaText, rulesText, formData, ruleToggles, combine, sectionOpen], persist, {
     deep: true,
   })
 
@@ -671,6 +752,10 @@ export const useEngineStore = defineStore('engine', () => {
     ruleFormData,
     formPathError,
     ruleMatchInfo,
+    combine,
+    combinationFor,
+    setCombination,
+    compiledQueries,
     matchedEntries,
     sourceResults,
     grandTotal,

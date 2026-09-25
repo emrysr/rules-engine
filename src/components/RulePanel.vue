@@ -3,6 +3,8 @@ import { computed, reactive, ref } from 'vue'
 import type { Rule } from '@/types'
 import { useEngineStore } from '@/stores/engine'
 import CollapsibleBox from './CollapsibleBox.vue'
+import { keysIn } from '@/combine'
+import CombineGroup from './CombineGroup.vue'
 import CopyJsonButton from './CopyJsonButton.vue'
 import EditableFieldset from './EditableFieldset.vue'
 import GridAddCell from './GridAddCell.vue'
@@ -105,27 +107,34 @@ function removeRule(key: string) {
 const lastIndex = computed(() => store.rulesConfig.length - 1)
 
 /**
- * The rules to copy into another app. Each rule's `enabled` is its checkbox
- * as it stands now, so the copy is the combination the user has been trying
- * out rather than each rule's starting state.
+ * What Copy JSON copies: one finished JSON Logic query per source, its rule
+ * combination with the switched-on rules' logic inlined.
  */
-function rulesToCopy() {
-  return store.rulesConfig.map((r) => ({ ...r, enabled: !!store.ruleToggles[r.key] }))
+function queriesToCopy() {
+  return store.compiledQueries
+}
+
+function rulesOn(source: string) {
+  return store.rulesConfig.filter((r) => r.source === source)
+}
+
+function usedIn(source: string) {
+  return keysIn(store.combinationFor(source))
 }
 </script>
 
 <template>
   <CollapsibleBox section="rules" title="JSON Rules">
     <template #actions>
-      <CopyJsonButton :value="rulesToCopy" :disabled="!store.rulesConfig.length"
-        title="Copy the rules as JSON, with their current on/off state" />
+      <CopyJsonButton :value="queriesToCopy" :disabled="!store.dataSources.length"
+        title="Copy one combined JSON Logic query per data source" />
     </template>
     <div class="mt-3">
       <p class="help block">
-        Each rule filters one data source; an entry is a result when it passes every enabled
-        rule for its source. Click a rule's name to rename it. Its logic is JSON Logic - entry
-        fields directly, form fields via <code>formData.&lt;group&gt;.&lt;label&gt;</code> - and
-        every edit here rebuilds the combined rules JSON that Export includes.
+        Each rule is one condition on a data source. Click a rule's name to rename it. Its logic
+        is JSON Logic - entry fields directly, form fields via
+        <code>formData.&lt;group&gt;.&lt;label&gt;</code>. Combine rules below sets how they join
+        up into each source's result query.
       </p>
 
       <p v-if="error" class="help is-danger mb-3">{{ error }}</p>
@@ -182,6 +191,29 @@ function rulesToCopy() {
             </template>
           </EditableFieldset>
           <GridAddCell label="Add rule" @add="addRule" />
+        </div>
+      </div>
+
+      <p class="label mt-5">Combine rules</p>
+      <p class="help block">
+        How each source's rules join up into its result query: <strong>all of</strong> (AND) or
+        <strong>any of</strong> (OR), with groups for mixing the two, e.g. all of highRating and
+        inStock, or any of bloodTypeMatch and adultUser. A rule switched off above is skipped
+        wherever it appears. <strong>Copy JSON</strong> copies the result: one JSON Logic query
+        per source, with each rule's logic written in, ready to paste into another app.
+      </p>
+      <div class="fixed-grid has-1-cols-mobile has-2-cols-tablet">
+        <div class="grid">
+          <fieldset v-for="s in store.dataSources" :key="s.key" class="cell form-group">
+            <legend class="label">{{ s.key }}</legend>
+            <p class="mb-3">
+              <span class="tag" :class="store.sourceResults[s.key]?.matched ? 'is-success' : 'is-danger'">
+                {{ store.sourceResults[s.key]?.matched ?? 0 }} / {{ store.sourceResults[s.key]?.total ?? 0 }} match
+              </span>
+            </p>
+            <CombineGroup :group="store.combinationFor(s.key)" :rules="rulesOn(s.key)" :used="usedIn(s.key)"
+              @update="(g) => store.setCombination(s.key, g)" />
+          </fieldset>
         </div>
       </div>
     </div>
