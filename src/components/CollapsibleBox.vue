@@ -4,7 +4,8 @@ import { useEngineStore } from '@/stores/engine'
 
 /**
  * A <details> box whose open state is stored (and persisted) against a section
- * name, so the layout survives a reload.
+ * name, so the layout survives a reload. The `actions` slot sits at the right
+ * of the title bar; clicks there don't open or close the box.
  */
 const props = defineProps<{ section: SectionName; title: string }>()
 
@@ -17,7 +18,13 @@ function onToggle(event: Event) {
 
 <template>
   <details class="box" :open="store.sectionOpen[props.section]" @toggle="onToggle">
-    <summary class="is-clickable has-text-weight-semibold is-size-6">{{ title }}</summary>
+    <summary class="is-clickable has-text-weight-semibold is-size-6">
+      {{ title }}
+      <!-- preventDefault stops the summary toggling; the buttons' own handlers still run. -->
+      <span v-if="$slots.actions" class="box-actions" @click.prevent>
+        <slot name="actions" />
+      </span>
+    </summary>
     <slot />
   </details>
 </template>

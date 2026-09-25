@@ -102,10 +102,38 @@ function removeRule(key: string) {
 }
 
 const lastIndex = computed(() => store.rulesConfig.length - 1)
+
+/** Label on the copy button: its result for a moment after a click. */
+const copyState = ref<'idle' | 'copied' | 'failed'>('idle')
+let copyTimer: ReturnType<typeof setTimeout> | undefined
+
+/**
+ * Copy the rules as JSON to paste into another app. Each rule's `enabled`
+ * is its checkbox as it stands now, so the copy is the combination the user
+ * has been trying out rather than each rule's starting state.
+ */
+async function copyRules() {
+  const rules = store.rulesConfig.map((r) => ({ ...r, enabled: !!store.ruleToggles[r.key] }))
+  try {
+    await navigator.clipboard.writeText(JSON.stringify(rules, null, 2))
+    copyState.value = 'copied'
+  } catch {
+    copyState.value = 'failed'
+  }
+  clearTimeout(copyTimer)
+  copyTimer = setTimeout(() => (copyState.value = 'idle'), 2000)
+}
 </script>
 
 <template>
   <CollapsibleBox section="rules" title="Rules">
+    <template #actions>
+      <button type="button" class="button" :class="{ 'is-success': copyState === 'copied', 'is-danger': copyState === 'failed' }"
+        :disabled="!store.rulesConfig.length" title="Copy the rules as JSON, with their current on/off state"
+        @click="copyRules">
+        {{ copyState === 'copied' ? 'Copied' : copyState === 'failed' ? 'Copy failed' : 'Copy JSON' }}
+      </button>
+    </template>
     <div class="mt-3">
       <p class="help block">
         Each rule filters one data source; an entry is a result when it passes every enabled

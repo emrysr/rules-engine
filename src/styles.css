@@ -15,6 +15,13 @@ details > summary {
   list-style: revert;
 }
 
+/* Buttons at the right of a panel's title bar. Floated so the summary keeps
+   its disclosure marker (a flex summary would lose it). */
+.box-actions {
+  float: right;
+  margin-top: -0.5rem;
+}
+
 /* Chrome wraps a <details> body in a content-box ::details-content box, and
    Bulma's `box-sizing: inherit` hands that down, so padded controls (a lone
    .select) overflow their wrappers. Restore border-box below it. */
