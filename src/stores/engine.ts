@@ -439,6 +439,60 @@ export const useEngineStore = defineStore('engine', () => {
     return ''
   }
 
+  // --- Rule editing ---------------------------------------------------------
+  /**
+   * Rewrite the rules through `edit`, so the rules JSON stays the one combined
+   * definition. Refuses while that JSON is invalid: rewriting from the parsed,
+   * empty list would wipe the user's half-finished edit.
+   * Returns an error message, or '' on success.
+   */
+  function editRules(edit: (rules: Rule[]) => Rule[]): string {
+    if (rulesError.value) return 'Fix the invalid rules JSON before editing the rules.'
+    rulesText.value = JSON.stringify(edit(rulesConfig.value), null, 2)
+    return ''
+  }
+
+  /** Append a match-everything rule on the first source, with a unique key. */
+  function addRule(): { key: string } | { error: string } {
+    let key = 'newRule'
+    for (let n = 2; rulesConfig.value.some((r) => r.key === key); n++) key = `newRule${n}`
+    const rule: Rule = { key, source: dataSources.value[0]?.key ?? '', enabled: true, logic: true }
+    const error = editRules((rs) => [...rs, rule])
+    return error ? { error } : { key }
+  }
+
+  function updateRule(key: string, patch: Partial<Omit<Rule, 'key'>>): string {
+    return editRules((rs) => rs.map((r) => (r.key === key ? { ...r, ...patch } : r)))
+  }
+
+  /** Rename a rule, carrying its live toggle state over to the new key. */
+  function renameRule(from: string, to: string): string {
+    if (rulesConfig.value.some((r) => r.key === to)) return `There's already a rule called "${to}".`
+    const error = editRules((rs) => rs.map((r) => (r.key === from ? { ...r, key: to } : r)))
+    if (error) return error
+    ruleToggles[to] = ruleToggles[from]
+    delete ruleToggles[from]
+    return ''
+  }
+
+  function removeRule(key: string): string {
+    const error = editRules((rs) => rs.filter((r) => r.key !== key))
+    if (!error) delete ruleToggles[key]
+    return error
+  }
+
+  /** Swap a rule with its neighbour: `step` -1 moves it earlier, 1 later. */
+  function moveRule(key: string, step: -1 | 1): string {
+    return editRules((rs) => {
+      const i = rs.findIndex((r) => r.key === key)
+      const j = i + step
+      if (i < 0 || j < 0 || j >= rs.length) return rs
+      const next = [...rs]
+      ;[next[i], next[j]] = [next[j], next[i]]
+      return next
+    })
+  }
+
   // --- Persistence ----------------------------------------------------------
   function persist(): void {
     saveCache({
@@ -491,5 +545,10 @@ export const useEngineStore = defineStore('engine', () => {
     addGroup,
     renameGroup,
     moveGroup,
+    addRule,
+    updateRule,
+    renameRule,
+    removeRule,
+    moveRule,
   }
 })

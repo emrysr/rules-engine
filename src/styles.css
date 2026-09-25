@@ -173,7 +173,11 @@ label.radio > span:last-child {
   margin-left: 0.4em;
 }
 
-.rule-row {
-  border-bottom: 1px solid #eee;
-  padding: 0.4rem 0;
+/* A rule's toggle, source and match count, in one wrapping row above its logic. */
+.rule-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin: 0.5rem 0 0.75rem;
 }

@@ -81,7 +81,8 @@ function exportConfig(): void {
       <p class="help mt-2 mb-2">
         Each rule: <code>source</code> (which data source it filters), <code>enabled</code>
         (default toggle state), <code>logic</code> (JSON Logic — entry fields directly, form
-        fields via <code>formData.&lt;group&gt;.&lt;label&gt;</code>).
+        fields via <code>formData.&lt;group&gt;.&lt;label&gt;</code>). Rebuilt from the Rule
+        Evaluation editor on every change there; edits here show up there too.
       </p>
       <textarea
         v-model="store.rulesText"
