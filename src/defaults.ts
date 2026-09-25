@@ -74,7 +74,7 @@ export const defaultRules: Rule[] = [
 /**
  * The customers who bought a product: carts holding it give their buyers'
  * user ids, then the users (as their Source Filter leaves them) with one of
- * those ids give their full names.
+ * those ids give their first and last names.
  */
 export const defaultPipelines: Pipeline[] = [
   {
@@ -96,7 +96,7 @@ export const defaultPipelines: Pipeline[] = [
     blocks: [
       { type: 'source', source: 'users' },
       { type: 'filter', condition: { op: 'and', items: [{ in: [{ var: 'id' }, { var: 'pipelines.Buyers' }] }] } },
-      { type: 'map', path: 'firstName + " " + lastName' },
+      { type: 'map', path: 'firstName, lastName' },
     ],
   },
 ]

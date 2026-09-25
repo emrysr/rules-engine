@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, useId } from 'vue'
+import { computed, ref, useId } from 'vue'
 import { entryPaths } from '@/comparison'
-import { BLOCK_LABELS, describe } from '@/pipeline'
+import { BLOCK_LABELS, describe, mapFields } from '@/pipeline'
 import type { Block, StepResult } from '@/pipeline'
 import { useEngineStore } from '@/stores/engine'
 import ConditionEditor from './ConditionEditor.vue'
@@ -28,11 +28,37 @@ const listId = useId()
 /** The items coming in, for field suggestions. */
 const items = computed(() => (Array.isArray(props.input) ? props.input : []))
 
-/** Field paths of the items coming in, listed under the map block's box. */
+/** Field paths of the items coming in, for the map block's pickers. */
 const itemPaths = computed(() => {
   const objects = items.value.filter((i) => i && typeof i === 'object' && !Array.isArray(i))
   return entryPaths(objects as Record<string, unknown>[])
 })
+
+/**
+ * The map block's pickers: one per field, and one to start with. A picker
+ * still unset stays on screen but isn't saved, so the block keeps its
+ * picked fields.
+ */
+const mapDraft = ref<string[] | null>(null)
+const mapPicks = computed(() => {
+  if (mapDraft.value) return mapDraft.value
+  const fields = props.block.type === 'map' ? mapFields(props.block.path) : []
+  return fields.length ? fields : ['']
+})
+
+/** The fields to offer a picker: the items' fields, plus its own if they no longer have it. */
+function fieldOptions(current: string): string[] {
+  return current && !itemPaths.value.includes(current) ? [...itemPaths.value, current] : itemPaths.value
+}
+
+function setMapFields(fields: string[]) {
+  mapDraft.value = fields.some((f) => !f) ? fields : null
+  emit('update', { type: 'map', path: fields.filter(Boolean).join(', ') })
+}
+
+function setMapField(i: number, field: string) {
+  setMapFields(mapPicks.value.map((f, j) => (j === i ? field : f)))
+}
 
 /** The list sources a pipeline can start from, plus the block's own if it's gone. */
 const sourceOptions = computed(() => {
@@ -93,19 +119,29 @@ function value(e: Event): string {
     <ConditionEditor v-else-if="block.type === 'filter'" :condition="block.condition" :items="items"
       :pipelines="pipelines" :label="label" @update="(condition) => patch({ condition })" />
 
-    <div v-else-if="block.type === 'map'" class="field">
-      <label class="label" :for="`${listId}-map`">Map each item to</label>
-      <div class="control">
-        <input :id="`${listId}-map`" class="input code" type="text" :value="block.path" spellcheck="false"
-          autocomplete="off" placeholder='e.g. firstName + " " + lastName'
-          @change="emit('update', { type: 'map', path: value($event).trim() })" />
+    <template v-else-if="block.type === 'map'">
+      <p class="label">Map each item to</p>
+      <div v-for="(f, i) in mapPicks" :key="i" class="field has-addons">
+        <div class="control is-expanded">
+          <div class="select is-fullwidth">
+            <select :value="f" :aria-label="`${label}: field ${i + 1}`" @change="setMapField(i, value($event))">
+              <option value="" disabled>Choose a field</option>
+              <option v-for="p in fieldOptions(f)" :key="p" :value="p">{{ p }}</option>
+            </select>
+          </div>
+        </div>
+        <div v-if="mapPicks.length > 1" class="control">
+          <button type="button" class="button" :aria-label="`Remove field ${i + 1}`" title="Remove field"
+            @click="setMapFields(mapPicks.filter((_, j) => j !== i))">Remove</button>
+        </div>
       </div>
-      <p class="help">
-        A field, text in quotes, <code>+</code> to join them into one string, and commas for a
-        list: <code>firstName + " " + lastName</code>, <code>firstName, lastName</code>.
-      </p>
-      <p v-if="itemPaths.length" class="help">Fields: {{ itemPaths.join(', ') }}</p>
-    </div>
+      <div class="field">
+        <div class="control">
+          <button type="button" class="button" @click="setMapFields([...mapPicks, ''])">Add field</button>
+        </div>
+        <p v-if="mapPicks.length > 1" class="help">Several fields give a list per item.</p>
+      </div>
+    </template>
 
     <template v-else-if="block.type === 'test'">
       <div class="field">

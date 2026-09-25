@@ -10,7 +10,6 @@ import { PIPELINE_NAMESPACE, renameVar, varPaths } from '@/paths'
  *   filter (all of …)                        → {"filter": [<prev>, <condition>]}
  *   map category.id                          → {"map": [<prev>, {"var": "category.id"}]}
  *   map firstName, lastName                  → {"map": [<prev>, [{"var": "firstName"}, {"var": "lastName"}]]}
- *   map firstName + " " + lastName           → {"map": [<prev>, {"cat": [{"var": "firstName"}, " ", {"var": "lastName"}]}]}
  *   test any / every / no item               → {"some" | "all" | "none": [<prev>, <condition>]}
  *   count                                    → {"reduce": [<prev>, {"+": [acc, 1]}, 0]}
  *
@@ -36,7 +35,7 @@ export interface Condition {
 export type Block =
   | { type: 'source'; source: string }
   | { type: 'filter'; condition: Condition }
-  /** `path`: what each item becomes, written as a map expression (see parseMap). */
+  /** `path`: the field each item becomes, or several separated by commas for a list per item. */
   | { type: 'map'; path: string }
   | { type: 'test'; mode: 'some' | 'all' | 'none'; condition: Condition }
   | { type: 'count' }
@@ -114,77 +113,18 @@ export function hasItemLogic(h: HasItem): unknown {
   return { some: [{ var: h.path }, compileCondition(h.condition)] }
 }
 
-type MapToken = { kind: 'field' | 'text'; value: string } | { kind: ',' | '+' }
-
-function tokenizeMap(text: string): MapToken[] {
-  const tokens: MapToken[] = []
-  let i = 0
-  while (i < text.length) {
-    const c = text[i]
-    if (/\s/.test(c)) {
-      i++
-    } else if (c === ',' || c === '+') {
-      tokens.push({ kind: c })
-      i++
-    } else if (c === '"' || c === "'") {
-      let value = ''
-      i++
-      while (i < text.length && text[i] !== c) {
-        // A backslash keeps the next character, so a quote can go inside quotes: "5\" 2".
-        if (text[i] === '\\' && i + 1 < text.length) i++
-        value += text[i++]
-      }
-      if (i >= text.length) throw new Error(`A quote isn't closed: add a ${c} after ${c}${value}.`)
-      tokens.push({ kind: 'text', value })
-      i++
-    } else {
-      let value = ''
-      while (i < text.length && !/[\s,+"']/.test(text[i])) value += text[i++]
-      tokens.push({ kind: 'field', value })
-    }
-  }
-  return tokens
+/** A map block's fields: its path split on commas. */
+export function mapFields(path: string): string[] {
+  return path
+    .split(',')
+    .map((f) => f.trim())
+    .filter(Boolean)
 }
 
-function describeToken(t: MapToken): string {
-  if (!('value' in t)) return t.kind === ',' ? 'comma' : '+'
-  return t.kind === 'text' ? `"${t.value}"` : t.value
-}
-
-/**
- * A map expression as JSON Logic. Fields are read from each item, quoted
- * text is kept as it is, `+` joins its parts into one string and commas
- * make a list:
- *
- *   firstName                        → {"var": "firstName"}
- *   firstName + " " + lastName       → {"cat": [{"var": "firstName"}, " ", {"var": "lastName"}]}
- *   firstName, lastName              → [{"var": "firstName"}, {"var": "lastName"}]
- *
- * Throws, saying what's wrong, for anything else.
- */
-export function parseMap(text: string): unknown {
-  const tokens = tokenizeMap(text)
-  if (!tokens.length) throw new Error('Pick a field to map to.')
-  const items: unknown[] = []
-  let parts: unknown[] = []
-  tokens.forEach((t, i) => {
-    const prev = tokens[i - 1]
-    const wantsPart = !prev || prev.kind === ',' || prev.kind === '+'
-    if (!('value' in t)) {
-      if (wantsPart) throw new Error(`Something is missing before a ${describeToken(t)}.`)
-      if (t.kind === ',') {
-        items.push(parts.length === 1 ? parts[0] : { cat: parts })
-        parts = []
-      }
-    } else {
-      if (!wantsPart) throw new Error(`Put a + or a comma between ${describeToken(prev)} and ${describeToken(t)}.`)
-      parts.push(t.kind === 'field' ? { var: t.value } : t.value)
-    }
-  })
-  const last = tokens[tokens.length - 1]
-  if (!('value' in last)) throw new Error(`Something is missing after the last ${describeToken(last)}.`)
-  items.push(parts.length === 1 ? parts[0] : { cat: parts })
-  return items.length === 1 ? items[0] : items
+/** What a map block turns each item into: one field, or a list of several. */
+function mapExpr(path: string): unknown {
+  const vars = mapFields(path).map((f) => ({ var: f }))
+  return vars.length === 1 ? vars[0] : vars
 }
 
 // --- References between pipelines -------------------------------------------
@@ -256,7 +196,7 @@ export function compilePipeline(p: Pipeline, ctx: CompileContext): unknown {
         out = { filter: [out, cond(b.condition)] }
         break
       case 'map':
-        out = { map: [out, safeParseMap(b.path)] }
+        out = { map: [out, mapExpr(b.path)] }
         break
       case 'test':
         out = { [b.mode]: [out, cond(b.condition)] }
@@ -267,15 +207,6 @@ export function compilePipeline(p: Pipeline, ctx: CompileContext): unknown {
     }
   }
   return out
-}
-
-/** For Copy JSON: a map expression that doesn't parse is copied as a plain field. */
-function safeParseMap(text: string): unknown {
-  try {
-    return parseMap(text)
-  } catch {
-    return { var: text }
-  }
 }
 
 // --- Running ----------------------------------------------------------------
@@ -368,7 +299,8 @@ export function runPipeline(p: Pipeline, ctx: RunContext): StepResult[] {
           value = asList(value, 'Filter').filter((item) => passes(b.condition, scope, item))
           break
         case 'map':
-          const expr = parseMap(b.path)
+          if (!mapFields(b.path).length) throw new Error('Pick a field to map to.')
+          const expr = mapExpr(b.path)
           value = asList(value, 'Map').map((item) => jsonLogic.apply(expr as never, item as never))
           break
         case 'test': {
