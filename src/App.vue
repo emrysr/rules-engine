@@ -95,6 +95,24 @@ onMounted(() => store.fetchAll())
           read the result of the pipeline above it</s>
         </li>
         <li>
+          <s>Check a list in Data Filters - a rule can test a list on each entry, e.g. a cart's
+          products has at least one item where id = Product ID, with form values in scope</s>
+        </li>
+        <li>
+          <s>Map several fields - pick fields from dropdowns, one field or a list per item</s>
+        </li>
+        <li>
+          <s>Pipelines carry on from the one above - a source can be the result of the pipeline
+          above; pipelines can be switched off to test the result, and fold away</s>
+        </li>
+        <li>
+          <s>Sticky Results bar - collapsed at the foot of the screen with the result's size,
+          showing the last pipeline switched on</s>
+        </li>
+        <li>
+          <s>Form field help text - editable in place under each field, with its rule path</s>
+        </li>
+        <li>
           Pipelines, next - more blocks (sum / min / max, map to an object)
         </li>
         <li>
