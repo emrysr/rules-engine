@@ -70,10 +70,10 @@ export const defaultRules: Rule[] = [
 
 export const defaultSectionOpen: Record<SectionName, boolean> = {
   config: false,
+  sources: true,
   form: true,
   rules: true,
   results: true,
-  fetched: false,
 }
 
 /**

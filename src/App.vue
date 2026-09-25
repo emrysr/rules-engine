@@ -5,7 +5,7 @@ import ConfigPanel from '@/components/ConfigPanel.vue'
 import FormPanel from '@/components/FormPanel.vue'
 import RulePanel from '@/components/RulePanel.vue'
 import ResultsPanel from '@/components/ResultsPanel.vue'
-import FetchedDataPanel from '@/components/FetchedDataPanel.vue'
+import SourcesPanel from '@/components/SourcesPanel.vue'
 import ReloadPrompt from '@/components/ReloadPrompt.vue'
 
 const store = useEngineStore()
@@ -27,10 +27,10 @@ onMounted(() => store.fetchAll())
 
   <div class="container mt-4 mb-6 px-4">
     <ConfigPanel />
+    <SourcesPanel />
     <FormPanel />
     <RulePanel />
     <ResultsPanel />
-    <FetchedDataPanel />
   </div>
 
   <footer class="footer">

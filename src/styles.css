@@ -219,3 +219,8 @@ label.radio > span:last-child {
   align-items: center;
   margin-top: 0.5rem;
 }
+
+/* A source's fetch status tag and link, centred on each other. */
+.source-status {
+  align-items: center;
+}

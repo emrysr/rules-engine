@@ -129,6 +129,11 @@ export const useEngineStore = defineStore('engine', () => {
 
   // --- Fetching -------------------------------------------------------------
   async function fetchOne(src: DataSource): Promise<void> {
+    if (!src.url) {
+      errors[src.key] = 'No URL yet.'
+      delete rawData[src.key]
+      return
+    }
     loading[src.key] = true
     errors[src.key] = ''
     try {
@@ -466,6 +471,76 @@ export const useEngineStore = defineStore('engine', () => {
     return ''
   }
 
+  // --- Source editing -------------------------------------------------------
+  /**
+   * Rewrite the sources through `edit`, keeping the sources JSON the one
+   * combined list. Refuses while that JSON is invalid, as editRules does.
+   */
+  function editSources(edit: (sources: DataSource[]) => DataSource[]): string {
+    if (sourcesError.value) return 'Fix the invalid sources JSON before editing the data sources.'
+    sourcesText.value = JSON.stringify(edit(dataSources.value), null, 2)
+    return ''
+  }
+
+  /** Append a source with a unique key and no URL yet. */
+  function addSource(): { key: string } | { error: string } {
+    let key = 'newSource'
+    for (let n = 2; dataSources.value.some((s) => s.key === key); n++) key = `newSource${n}`
+    const error = editSources((ss) => [...ss, { key, url: '' }])
+    return error ? { error } : { key }
+  }
+
+  /** Change a source's URL and fetch from it straight away. */
+  function setSourceUrl(key: string, url: string): string {
+    const error = editSources((ss) => ss.map((s) => (s.key === key ? { ...s, url } : s)))
+    if (error) return error
+    void fetchOne({ key, url })
+    return ''
+  }
+
+  /**
+   * Rename a source. Rules name their source by key, so they're updated to
+   * match, and its fetched data and status move with it.
+   */
+  function renameSource(from: string, to: string): string {
+    if (dataSources.value.some((s) => s.key === to)) return `There's already a source called "${to}".`
+    if (rulesError.value) {
+      return 'Fix the invalid rules JSON first — renaming a source updates the rules that filter it.'
+    }
+    const error = editSources((ss) => ss.map((s) => (s.key === from ? { ...s, key: to } : s)))
+    if (error) return error
+    editRules((rs) => rs.map((r) => (r.source === from ? { ...r, source: to } : r)))
+    for (const map of [rawData, loading, errors] as Record<string, unknown>[]) {
+      if (from in map) {
+        map[to] = map[from]
+        delete map[from]
+      }
+    }
+    return ''
+  }
+
+  /** Delete a source and its fetched data. Rules filtering it are left as they are. */
+  function removeSource(key: string): string {
+    const error = editSources((ss) => ss.filter((s) => s.key !== key))
+    if (error) return error
+    delete rawData[key]
+    delete loading[key]
+    delete errors[key]
+    return ''
+  }
+
+  /** Swap a source with its neighbour: `step` -1 moves it earlier, 1 later. */
+  function moveSource(key: string, step: -1 | 1): string {
+    return editSources((ss) => {
+      const i = ss.findIndex((s) => s.key === key)
+      const j = i + step
+      if (i < 0 || j < 0 || j >= ss.length) return ss
+      const next = [...ss]
+      ;[next[i], next[j]] = [next[j], next[i]]
+      return next
+    })
+  }
+
   // --- Rule editing ---------------------------------------------------------
   /**
    * Rewrite the rules through `edit`, so the rules JSON stays the one combined
@@ -574,6 +649,11 @@ export const useEngineStore = defineStore('engine', () => {
     removeGroup,
     rulesReading,
     moveGroup,
+    addSource,
+    setSourceUrl,
+    renameSource,
+    removeSource,
+    moveSource,
     addRule,
     updateRule,
     renameRule,

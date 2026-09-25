@@ -85,4 +85,4 @@ export interface PersistedState {
   sectionOpen: Record<SectionName, boolean>
 }
 
-export type SectionName = 'config' | 'form' | 'rules' | 'results' | 'fetched'
+export type SectionName = 'config' | 'sources' | 'form' | 'rules' | 'results'

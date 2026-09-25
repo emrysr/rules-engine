@@ -31,31 +31,6 @@ function exportConfig(): void {
 
 <template>
   <CollapsibleBox section="config" title="Configuration">
-    <details open>
-      <summary class="is-clickable has-text-weight-semibold is-size-7">
-        Data Sources <span class="tag ml-1">list endpoints</span>
-      </summary>
-      <p class="help mt-2 mb-2">
-        Each entry: <code>key</code> (namespace used in rules, and the response field the list
-        is auto-extracted from), <code>url</code> (a list endpoint).
-      </p>
-      <textarea
-        v-model="store.sourcesText"
-        class="textarea code is-size-7"
-        rows="6"
-        spellcheck="false"
-        aria-label="Data sources JSON"
-      ></textarea>
-      <p v-if="store.sourcesError" class="help is-danger">{{ store.sourcesError }}</p>
-      <button
-        class="button is-small is-link mt-2"
-        :class="{ 'is-loading': store.anyLoading }"
-        @click="store.fetchAll()"
-      >
-        Fetch All
-      </button>
-    </details>
-
     <details>
       <summary class="is-clickable has-text-weight-semibold is-size-7">
         Form Schema <span class="tag ml-1">FormKit field definitions</span>
@@ -99,8 +74,8 @@ function exportConfig(): void {
         Import / Export <span class="tag ml-1">whole config</span>
       </summary>
       <p class="help mt-2 mb-2">
-        One object: <code>sources</code>, <code>schema</code> and <code>rules</code> (each as
-        above), plus optional <code>formData</code> values. Importing replaces everything —
+        One object: <code>sources</code> (each <code>{ key, url }</code>), <code>schema</code>
+        and <code>rules</code> (each as above), plus optional <code>formData</code> values. Importing replaces everything —
         toggles reset to each rule's <code>enabled</code>, and form fields not in
         <code>formData</code> take their defaults.
       </p>
