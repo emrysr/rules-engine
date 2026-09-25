@@ -6,7 +6,10 @@ import { ref } from 'vue'
  * Copy failed for a moment. `value` is a function so the copy is taken at
  * click time, not when the button renders.
  */
-const props = defineProps<{ value: () => unknown; title: string; disabled?: boolean }>()
+const props = withDefaults(
+  defineProps<{ value: () => unknown; title: string; label?: string; disabled?: boolean }>(),
+  { label: 'Copy JSON' },
+)
 
 const state = ref<'idle' | 'copied' | 'failed'>('idle')
 let timer: ReturnType<typeof setTimeout> | undefined
@@ -26,6 +29,6 @@ async function copy() {
 <template>
   <button type="button" class="button" :class="{ 'is-success': state === 'copied', 'is-danger': state === 'failed' }"
     :disabled="disabled" :title="title" @click="copy">
-    {{ state === 'copied' ? 'Copied' : state === 'failed' ? 'Copy failed' : 'Copy JSON' }}
+    {{ state === 'copied' ? 'Copied' : state === 'failed' ? 'Copy failed' : label }}
   </button>
 </template>

@@ -67,13 +67,6 @@ onMounted(() => store.fetchAll())
           AND / OR groups in the rule builder, so one rule can hold several comparisons
         </li>
         <li>
-          Type-aware builder - offer operators and value inputs to suit the field (numbers, text,
-          lists)
-        </li>
-        <li>
-          Reorder fields within a fieldset, and move them between fieldsets
-        </li>
-        <li>
           Edit an existing choice field's options (the options dialog only runs when adding)
         </li>
         <li>

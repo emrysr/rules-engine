@@ -65,7 +65,7 @@ function deleteGroup(name: string, fields: SchemaField[]) {
 <template>
   <CollapsibleBox section="form" title="Options Form">
     <template #actions>
-      <CopyJsonButton :value="formKitSchema" :disabled="!store.schemaFields.length"
+      <CopyJsonButton :value="formKitSchema" :disabled="!store.schemaFields.length" label="Copy FormKit Schema"
         title="Copy the form as a FormKit schema" />
     </template>
     <div class="mt-3">
@@ -76,7 +76,7 @@ function deleteGroup(name: string, fields: SchemaField[]) {
         path under each input is how rules read it, and renaming updates the rules to match.
       </p>
       <p class="help block">
-        <strong>Copy JSON</strong> gives you the form as a FormKit schema, ready to paste into an
+        <strong>Copy FormKit Schema</strong> gives you the form as a FormKit schema, ready to paste into an
         existing FormKit project and render with
         <code>&lt;FormKit type="form"&gt;&lt;FormKitSchema :schema="schema" /&gt;&lt;/FormKit&gt;</code>.
         Each fieldset becomes a FormKit group, so the form's value has the same
