@@ -16,7 +16,7 @@ are all JSON, editable at runtime:
 | --- | --- | --- |
 | **Data sources** | `{ key, url }` | `key` is the namespace rules target, and the response field the array is auto-extracted from. |
 | **Form schema** | `{ key, label, type, options?, default?, group?, classes? }` | Rendered as real `<FormKit>` inputs; `group` is the fieldset it sits in. Fieldsets show in the order their groups first appear; the arrows under each one move it. |
-| **Rules** | `{ key, source, enabled, logic }` | `logic` is JSON Logic. `source` says which data source it filters. Each rule is a fieldset in the Rule Evaluation panel — rename, move, add or delete it and edit its logic there; the rules JSON is rebuilt on every change. |
+| **Rules** | `{ key, source, enabled, logic }` | `logic` is JSON Logic. `source` says which data source it filters. Each rule is a fieldset in the Rules panel — rename, move, add or delete it and edit its logic there, with a query builder or as raw JSON; the rules JSON is rebuilt on every change. |
 
 The point is the coupling between the last two: a rule reads an entry's fields
 directly (`{"var": "rating"}`) *and* live form values via the `formData` namespace.

@@ -26,7 +26,7 @@ const emit = defineEmits<{
 
 <template>
   <fieldset class="cell form-group">
-    <legend class="label field-label">
+    <legend class="label label-row">
       <InlineEdit :text="props.legend" :auto-edit="autoEdit" @save="(t) => emit('rename', t)" />
       <button type="button" class="delete" :title="`Delete ${noun}`" :aria-label="`Delete ${legend}`"
         @click="emit('delete')"></button>

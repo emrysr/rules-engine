@@ -55,7 +55,7 @@ function deleteGroup(name: string, fields: SchemaField[]) {
 </script>
 
 <template>
-  <CollapsibleBox section="form" title="Form">
+  <CollapsibleBox section="form" title="Options">
     <div class="mt-3">
       <div class="block content">
 

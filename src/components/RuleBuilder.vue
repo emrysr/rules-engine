@@ -10,7 +10,7 @@ import OperandPicker from './OperandPicker.vue'
 /**
  * Query builder for a rule whose logic is a single comparison. Anything
  * else (and/or, nested logic, the match-everything `true`) is left to the
- * JSON below it, with an offer to start over as a comparison.
+ * rule's raw JSON view, with an offer to start over as a comparison.
  */
 const props = defineProps<{ rule: Rule }>()
 const emit = defineEmits<{ update: [logic: Rule['logic']] }>()
@@ -65,7 +65,7 @@ function startComparison() {
     </template>
 
     <div v-else class="field">
-      <p class="help mb-2">This rule's logic isn't a single comparison, so it's edited as JSON below.</p>
+      <p class="help mb-2">This rule's logic isn't a single comparison — use Edit JSON to change it.</p>
       <div class="control">
         <button type="button" class="button" @click="startComparison">Replace with a comparison</button>
       </div>

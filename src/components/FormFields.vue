@@ -36,7 +36,7 @@ function labelTag(f: SchemaField): string {
     :input-class="f.type === 'select' ? undefined : f.classes" preserve>
     <template #[labelSection(f)]="context">
       <component :is="labelTag(f)" :for="labelTag(f) === 'label' ? context.id : undefined"
-        class="field-label" :class="{ label: labelTag(f) !== 'span' }">
+        class="label-row" :class="{ label: labelTag(f) !== 'span' }">
         <InlineEdit :text="f.label || f.key" @save="(t) => emit('error', store.renameField(f.key, t))" />
         <button type="button" class="delete" title="Delete field" :aria-label="`Delete ${f.label || f.key}`"
           @click.prevent="emit('error', store.removeField(f.key))"></button>

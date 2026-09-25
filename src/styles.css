@@ -42,6 +42,7 @@ fieldset.form-group {
 fieldset.form-group > legend {
   padding: 0 0.4rem;
   margin-bottom: 0;
+  text-align: left;
 }
 
 /* Move arrows on the left, Add on the right. */
@@ -84,8 +85,10 @@ fieldset.form-group > legend {
   stroke-linejoin: round;
 }
 
-/* A field label with its delete button pushed to the far end. */
-.field-label {
+/* A label (or legend) with its delete button pushed to the far end. Not
+   Bulma's .field-label, which is for horizontal forms and right-aligns its
+   text from tablet width up. */
+.label-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -181,7 +184,7 @@ label.radio > span:last-child {
 }
 
 /* Bulma drops the margin after a container's last .field; keep the builder's
-   last row off the JSON below it. */
+   last row off the buttons below it. */
 .rule-builder {
   margin-bottom: 0.75rem;
 }

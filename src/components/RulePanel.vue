@@ -22,6 +22,19 @@ const newRule = ref('')
 const drafts = reactive<Record<string, string>>({})
 const draftErrors = reactive<Record<string, string>>({})
 
+/** Rules showing their raw JSON instead of the query builder, by key. Session-only. */
+const rawView = reactive<Record<string, boolean>>({})
+
+// Back to the builder, a draft that never parsed is dropped: the builder
+// shows the stored logic, and the draft would otherwise resurface later.
+function toggleRaw(key: string) {
+  if (rawView[key]) {
+    delete drafts[key]
+    delete draftErrors[key]
+  }
+  rawView[key] = !rawView[key]
+}
+
 function logicText(r: Rule): string {
   return drafts[r.key] ?? JSON.stringify(r.logic, null, 2)
 }
@@ -70,7 +83,7 @@ function addRule() {
 function renameRule(from: string, to: string) {
   error.value = store.renameRule(from, to)
   if (error.value) return
-  for (const map of [drafts, draftErrors]) {
+  for (const map of [drafts, draftErrors, rawView] as Record<string, unknown>[]) {
     if (from in map) {
       map[to] = map[from]
       delete map[from]
@@ -83,6 +96,7 @@ function removeRule(key: string) {
   if (!error.value) {
     delete drafts[key]
     delete draftErrors[key]
+    delete rawView[key]
   }
 }
 
@@ -90,7 +104,7 @@ const lastIndex = computed(() => store.rulesConfig.length - 1)
 </script>
 
 <template>
-  <CollapsibleBox section="rules" title="Rule Evaluation">
+  <CollapsibleBox section="rules" title="Rules">
     <div class="mt-3">
       <div class="block content">
         <p class="help">
@@ -136,9 +150,7 @@ const lastIndex = computed(() => store.rulesConfig.length - 1)
               </div>
             </div>
 
-            <RuleBuilder :rule="r" @update="(logic) => setLogic(r, logic)" />
-
-            <div class="field">
+            <div v-if="rawView[r.key]" class="field">
               <div class="control">
                 <textarea class="textarea code" :rows="rows(r)" spellcheck="false"
                   :aria-label="`${r.key} logic JSON`" :value="logicText(r)"
@@ -147,6 +159,15 @@ const lastIndex = computed(() => store.rulesConfig.length - 1)
               </div>
               <p v-if="draftErrors[r.key]" class="help is-danger">{{ draftErrors[r.key] }}</p>
             </div>
+            <RuleBuilder v-else :rule="r" @update="(logic) => setLogic(r, logic)" />
+
+            <template #actions>
+              <button type="button" class="button" :aria-pressed="!!rawView[r.key]"
+                :title="rawView[r.key] ? 'Back to the query builder' : 'Edit this rule\'s logic as raw JSON'"
+                @click="toggleRaw(r.key)">
+                {{ rawView[r.key] ? 'Use builder' : 'Edit JSON' }}
+              </button>
+            </template>
           </EditableFieldset>
         </div>
       </div>
