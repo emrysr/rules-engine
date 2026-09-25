@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import type { SchemaField } from '@/types'
 import { useEngineStore } from '@/stores/engine'
 import CollapsibleBox from './CollapsibleBox.vue'
+import CopyJsonButton from './CopyJsonButton.vue'
 import EditableFieldset from './EditableFieldset.vue'
 import FieldOptionsDialog from './FieldOptionsDialog.vue'
 import FieldTypeMenu from './FieldTypeMenu.vue'
@@ -56,7 +57,11 @@ function deleteGroup(name: string, fields: SchemaField[]) {
 </script>
 
 <template>
-  <CollapsibleBox section="form" title="Options">
+  <CollapsibleBox section="form" title="Options Form">
+    <template #actions>
+      <CopyJsonButton :value="() => store.schemaFields" :disabled="!store.schemaFields.length"
+        title="Copy the form's field definitions as JSON" />
+    </template>
     <div class="mt-3">
       <p class="help block">
         These selections are live inputs into the rules below — every change here re-runs the

@@ -15,8 +15,8 @@ are all JSON, editable at runtime:
 | Config | Shape | Does |
 | --- | --- | --- |
 | **Data sources** | `{ key, url, listPath? }` | `key` is the namespace rules target, and the response field the array is auto-extracted from. `listPath` is a dotted path to the list when the API wraps it (`data`, `response.items`); without it the list is found automatically. Each source is a fieldset in the Data Sources panel — rename, move, add or delete it, set its URL, fetch it on its own and preview what came back. |
-| **Form schema** | `{ key, label, type, options?, default?, group?, classes? }` | Rendered as real `<FormKit>` inputs; `group` is the fieldset it sits in. Fieldsets show in the order their groups first appear; the arrows under each one move it. |
-| **Rules** | `{ key, source, enabled, logic }` | `logic` is JSON Logic. `source` says which data source it filters. Each rule is a fieldset in the Rules panel — rename, move, add or delete it and edit its logic there, with a query builder or as raw JSON; the rules JSON is rebuilt on every change. **Copy JSON** in the panel's title bar copies the rules, with `enabled` set to each checkbox as it stands, to paste into another app. |
+| **Form schema** | `{ key, label, type, options?, default?, group?, classes? }` | Rendered as real `<FormKit>` inputs in the Options Form panel; `group` is the fieldset it sits in. **Copy JSON** in that panel's title bar copies these definitions. Fieldsets show in the order their groups first appear; the arrows under each one move it. |
+| **Rules** | `{ key, source, enabled, logic }` | `logic` is JSON Logic. `source` says which data source it filters. Each rule is a fieldset in the JSON Rules panel — rename, move, add or delete it and edit its logic there, with a query builder or as raw JSON; the rules JSON is rebuilt on every change. **Copy JSON** in the panel's title bar copies the rules, with `enabled` set to each checkbox as it stands, to paste into another app. |
 
 The point is the coupling between the last two: a rule reads an entry's fields
 directly (`{"var": "rating"}`) *and* live form values via the `formData` namespace.
