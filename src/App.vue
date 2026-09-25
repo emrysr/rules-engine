@@ -73,8 +73,8 @@ onMounted(() => store.fetchAll())
           Replace the browser's confirm prompts with a Bulma dialog
         </li>
         <li>
-          Save / recall named config presets (e.g. "Desirable Campervan", "Holiday Activities")
-          via local storage
+          <s>Save / recall named config presets (e.g. "Desirable Campervan", "Holiday Activities")
+          via local storage</s>
         </li>
       </ul>
     </div>

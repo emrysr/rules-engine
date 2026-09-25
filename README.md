@@ -45,6 +45,9 @@ change a field and every match count re-runs.
   break the whole evaluation pass.
 - **Everything persists to `localStorage`**, including fetched data - so a cold start
   (or an offline one) renders immediately and refreshes in the background.
+- **Presets are stored apart from the working state** (`cdre-presets-v1`), so loading a
+  preset or importing a config never touches them. A preset saves each rule's `enabled`
+  as its checkbox stood, so loading brings the exact combination back.
 
 ## Running it
 
@@ -90,16 +93,22 @@ src/
   defaults.ts          the seed config shipped on first load
 ```
 
-## Todo
+## Roadmap
 
-- [ ] **JSON rules editor** - replace the raw JSON textarea with a rule builder
-      (field / operator / value pickers instead of hand-written JSON Logic)
-- [ ] **FormKit schema editor** - replace the raw JSON textarea with a field builder
-      (add/edit/reorder fields, pick type, set options)
+- [x] **JSON rules editor** - a query builder (field / operator / value pickers) with a
+      raw JSON view per rule
+- [x] **FormKit schema editor** - a field builder (add/rename/delete fields and
+      fieldsets, pick type, set options)
+- [x] **Data sources editor** - add, rename, reorder and delete sources, fetch each
+      on its own or all at once, and preview what came back
 - [x] **Import a complete config object** - one JSON blob covering sources + schema +
       rules + form defaults in a single action
-- [ ] **Named config presets** - save/recall e.g. "Desirable Campervan", "Holiday
-      Activities"
+- [x] **Named config presets** - save/recall e.g. "Desirable Campervan", "Holiday
+      Activities" in the Configuration panel, kept in `localStorage`
+- [ ] **AND / OR groups** in the rule builder, so one rule can hold several comparisons
+- [ ] **Edit an existing choice field's options** (the options dialog only runs when
+      adding)
+- [ ] **A Bulma dialog** in place of the browser's confirm prompts
 
 Known rough edge: the full Bulma stylesheet is ~710 KB uncompressed (72 KB gzipped)
 and all of it is precached. Worth switching to a Sass build that imports only the

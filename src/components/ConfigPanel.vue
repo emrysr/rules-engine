@@ -2,6 +2,7 @@
 import { useEngineStore } from '@/stores/engine'
 import { ref } from 'vue'
 import CollapsibleBox from './CollapsibleBox.vue'
+import PresetsGrid from './PresetsGrid.vue'
 
 const store = useEngineStore()
 
@@ -32,6 +33,14 @@ function exportConfig(): void {
 <template>
   <CollapsibleBox section="config" title="Configuration">
     <div class="mt-3">
+      <p class="label">Presets</p>
+      <p class="help block">
+        Save the whole setup - data sources, form, rules, form values and which rules are on -
+        under a name, and load it back later. Presets are kept in this browser.
+      </p>
+      <PresetsGrid />
+
+      <p class="label mt-5">Import / Export</p>
       <p class="help block">
         Import or export the whole setup as one JSON object: <code>sources</code> (each
         <code>{ key, url, listPath? }</code>), <code>schema</code> (the Options Form fields), <code>rules</code>
