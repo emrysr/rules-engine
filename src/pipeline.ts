@@ -9,6 +9,8 @@ import { PIPELINE_NAMESPACE, renameVar, varPaths } from '@/paths'
  *   source "carts"                           → {"filter": [{"var": "carts"}, <carts Source Filter>]}
  *   filter (all of …)                        → {"filter": [<prev>, <condition>]}
  *   map category.id                          → {"map": [<prev>, {"var": "category.id"}]}
+ *   map firstName, lastName                  → {"map": [<prev>, [{"var": "firstName"}, {"var": "lastName"}]]}
+ *   map firstName, lastName joined by " "    → {"map": [<prev>, {"cat": [{"var": "firstName"}, " ", {"var": "lastName"}]}]}
  *   test any / every / no item               → {"some" | "all" | "none": [<prev>, <condition>]}
  *   count                                    → {"reduce": [<prev>, {"+": [acc, 1]}, 0]}
  *
@@ -34,7 +36,11 @@ export interface Condition {
 export type Block =
   | { type: 'source'; source: string }
   | { type: 'filter'; condition: Condition }
-  | { type: 'map'; path: string }
+  /**
+   * `path`: one field, or several separated by commas for a list per item.
+   * `join`: text to join several fields into one string with, instead.
+   */
+  | { type: 'map'; path: string; join?: string }
   | { type: 'test'; mode: 'some' | 'all' | 'none'; condition: Condition }
   | { type: 'count' }
 
@@ -111,6 +117,22 @@ export function hasItemLogic(h: HasItem): unknown {
   return { some: [{ var: h.path }, compileCondition(h.condition)] }
 }
 
+/** A map block's fields: its path split on commas. */
+export function mapFields(path: string): string[] {
+  return path
+    .split(',')
+    .map((f) => f.trim())
+    .filter(Boolean)
+}
+
+/** What a map block turns each item into, as JSON Logic: a field, a list of fields, or them joined. */
+function mapExpr(b: Extract<Block, { type: 'map' }>): unknown {
+  const vars = mapFields(b.path).map((f) => ({ var: f }))
+  if (vars.length === 1) return vars[0]
+  if (!b.join) return vars
+  return { cat: vars.flatMap((v, i) => (i ? [b.join, v] : [v])) }
+}
+
 // --- References between pipelines -------------------------------------------
 
 const PIPELINE_PREFIX = PIPELINE_NAMESPACE + '.'
@@ -180,7 +202,7 @@ export function compilePipeline(p: Pipeline, ctx: CompileContext): unknown {
         out = { filter: [out, cond(b.condition)] }
         break
       case 'map':
-        out = { map: [out, { var: b.path }] }
+        out = { map: [out, mapExpr(b)] }
         break
       case 'test':
         out = { [b.mode]: [out, cond(b.condition)] }
@@ -283,8 +305,8 @@ export function runPipeline(p: Pipeline, ctx: RunContext): StepResult[] {
           value = asList(value, 'Filter').filter((item) => passes(b.condition, scope, item))
           break
         case 'map':
-          if (!b.path) throw new Error('Pick a field to map to.')
-          value = asList(value, 'Map').map((item) => readPath(item, b.path))
+          if (!mapFields(b.path).length) throw new Error('Pick a field to map to.')
+          value = asList(value, 'Map').map((item) => jsonLogic.apply(mapExpr(b) as never, item as never))
           break
         case 'test': {
           const items = asList(value, 'Test')

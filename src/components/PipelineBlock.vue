@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, useId } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
 import { entryPaths } from '@/comparison'
-import { BLOCK_LABELS, describe } from '@/pipeline'
+import { BLOCK_LABELS, describe, mapFields } from '@/pipeline'
 import type { Block, StepResult } from '@/pipeline'
 import { useEngineStore } from '@/stores/engine'
 import ConditionEditor from './ConditionEditor.vue'
@@ -33,6 +33,22 @@ const itemPaths = computed(() => {
   const objects = items.value.filter((i) => i && typeof i === 'object' && !Array.isArray(i))
   return entryPaths(objects as Record<string, unknown>[])
 })
+
+/** What's typed in the map block's fields box, for suggesting the field after the last comma. */
+const mapDraft = ref(props.block.type === 'map' ? props.block.path : '')
+watch(
+  () => (props.block.type === 'map' ? props.block.path : ''),
+  (path) => (mapDraft.value = path),
+)
+
+/** Suggestions for the map box: each field, after whatever comes before the last comma. */
+const mapSuggestions = computed(() => {
+  const cut = mapDraft.value.lastIndexOf(',')
+  const before = cut < 0 ? '' : mapDraft.value.slice(0, cut + 1) + ' '
+  return itemPaths.value.map((p) => before + p)
+})
+
+const mapsSeveral = computed(() => props.block.type === 'map' && mapFields(props.block.path).length > 1)
 
 /** The list sources a pipeline can start from, plus the block's own if it's gone. */
 const sourceOptions = computed(() => {
@@ -93,16 +109,28 @@ function value(e: Event): string {
     <ConditionEditor v-else-if="block.type === 'filter'" :condition="block.condition" :items="items"
       :pipelines="pipelines" :label="label" @update="(condition) => patch({ condition })" />
 
-    <div v-else-if="block.type === 'map'" class="field">
-      <label class="label" :for="`${listId}-map`">Pick field</label>
-      <div class="control">
-        <input :id="`${listId}-map`" class="input" type="text" :list="`${listId}-map-list`" :value="block.path"
-          placeholder="e.g. category.id" @change="patch({ path: value($event).trim() })" />
-        <datalist :id="`${listId}-map-list`">
-          <option v-for="p in itemPaths" :key="p" :value="p" />
-        </datalist>
+    <template v-else-if="block.type === 'map'">
+      <div class="field">
+        <label class="label" :for="`${listId}-map`">Pick fields</label>
+        <div class="control">
+          <input :id="`${listId}-map`" class="input" type="text" :list="`${listId}-map-list`" :value="block.path"
+            placeholder="e.g. firstName, lastName" @input="mapDraft = value($event)"
+            @change="patch({ path: mapFields(value($event)).join(', ') })" />
+          <datalist :id="`${listId}-map-list`">
+            <option v-for="p in mapSuggestions" :key="p" :value="p" />
+          </datalist>
+        </div>
+        <p class="help">One field, or several separated by commas for a list per item.</p>
       </div>
-    </div>
+      <div v-if="mapsSeveral" class="field">
+        <label class="label" :for="`${listId}-join`">Join with</label>
+        <div class="control">
+          <input :id="`${listId}-join`" class="input" type="text" :value="block.join ?? ''"
+            placeholder="Leave empty for a list" @change="patch({ join: value($event) || undefined })" />
+        </div>
+        <p class="help">Text between the fields, e.g. a space, to make one string per item.</p>
+      </div>
+    </template>
 
     <template v-else-if="block.type === 'test'">
       <div class="field">
