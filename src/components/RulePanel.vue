@@ -74,7 +74,7 @@ function rows(r: Rule): number {
 
 /** Every data source, plus a rule's own source if it names one that's gone. */
 function sourceOptions(r: Rule): string[] {
-  const keys = store.dataSources.map((s) => s.key)
+  const keys = store.listSources.map((s) => s.key)
   return r.source && !keys.includes(r.source) ? [...keys, r.source] : keys
 }
 
@@ -126,15 +126,16 @@ function usedIn(source: string) {
 <template>
   <CollapsibleBox section="rules" title="JSON Rules">
     <template #actions>
-      <CopyJsonButton :value="queriesToCopy" :disabled="!store.dataSources.length"
+      <CopyJsonButton :value="queriesToCopy" :disabled="!store.listSources.length"
         title="Copy one combined JSON Logic query per data source" />
     </template>
     <div class="mt-3">
       <p class="help block">
         Each rule is one condition on a data source. Click a rule's name to rename it. Its logic
         is JSON Logic - entry fields directly, form fields via
-        <code>formData.&lt;group&gt;.&lt;label&gt;</code>. Combine rules below sets how they join
-        up into each source's result query.
+        <code>formData.&lt;group&gt;.&lt;label&gt;</code>, values sources via
+        <code>&lt;source&gt;.&lt;field&gt;</code>. The Query Builder below sets how they join up
+        into each source's result query.
       </p>
 
       <p v-if="error" class="help is-danger mb-3">{{ error }}</p>
@@ -194,7 +195,7 @@ function usedIn(source: string) {
         </div>
       </div>
 
-      <p class="label mt-5">Combine rules</p>
+      <p class="label mt-5">Query Builder</p>
       <p class="help block">
         How each source's rules join up into its result query: <strong>all of</strong> (AND) or
         <strong>any of</strong> (OR), with groups for mixing the two, e.g. all of highRating and
@@ -204,7 +205,7 @@ function usedIn(source: string) {
       </p>
       <div class="fixed-grid has-1-cols-mobile has-2-cols-tablet">
         <div class="grid">
-          <fieldset v-for="s in store.dataSources" :key="s.key" class="cell form-group">
+          <fieldset v-for="s in store.listSources" :key="s.key" class="cell form-group">
             <legend class="label">{{ s.key }}</legend>
             <p class="mb-3">
               <span class="tag" :class="store.sourceResults[s.key]?.matched ? 'is-success' : 'is-danger'">

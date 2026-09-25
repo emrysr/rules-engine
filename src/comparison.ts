@@ -21,13 +21,15 @@ export const OPERATORS = [
 
 export type Operator = (typeof OPERATORS)[number]['op']
 
-export type OperandKind = 'entry' | 'form' | 'value'
+export type OperandKind = 'entry' | 'form' | 'source' | 'value'
 
 export type Literal = string | number | boolean | null
 
+/** `source`: a values source's value, read as `{"var": "<source key>.<field>"}`. */
 export type Operand =
   | { kind: 'entry'; path: string }
   | { kind: 'form'; path: string }
+  | { kind: 'source'; path: string }
   | { kind: 'value'; value: Literal }
 
 export interface Comparison {
@@ -42,24 +44,29 @@ function isLiteral(x: unknown): x is Literal {
   return x === null || ['string', 'number', 'boolean'].includes(typeof x)
 }
 
-function parseOperand(x: unknown): Operand | null {
+function parseOperand(x: unknown, valueKeys: string[]): Operand | null {
   if (isLiteral(x)) return { kind: 'value', value: x }
   if (!x || typeof x !== 'object' || Array.isArray(x)) return null
   const keys = Object.keys(x)
   const path = (x as { var?: unknown }).var
   if (keys.length !== 1 || typeof path !== 'string') return null
-  return path.startsWith(FORM_PREFIX) ? { kind: 'form', path } : { kind: 'entry', path }
+  if (path.startsWith(FORM_PREFIX)) return { kind: 'form', path }
+  if (valueKeys.includes(path.split('.')[0])) return { kind: 'source', path }
+  return { kind: 'entry', path }
 }
 
-/** The comparison a rule's logic spells out, or null if it's anything else. */
-export function parseComparison(logic: unknown): Comparison | null {
+/**
+ * The comparison a rule's logic spells out, or null if it's anything else.
+ * `valueKeys` are the values sources' keys, so their vars read as source values.
+ */
+export function parseComparison(logic: unknown, valueKeys: string[] = []): Comparison | null {
   if (!logic || typeof logic !== 'object' || Array.isArray(logic)) return null
   const entries = Object.entries(logic)
   if (entries.length !== 1) return null
   const [op, args] = entries[0]
   if (!OPERATORS.some((o) => o.op === op) || !Array.isArray(args) || args.length !== 2) return null
-  const left = parseOperand(args[0])
-  const right = parseOperand(args[1])
+  const left = parseOperand(args[0], valueKeys)
+  const right = parseOperand(args[1], valueKeys)
   return left && right ? { op: op as Operator, left, right } : null
 }
 

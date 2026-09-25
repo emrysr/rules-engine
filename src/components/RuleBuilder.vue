@@ -17,9 +17,21 @@ const emit = defineEmits<{ update: [logic: Rule['logic']] }>()
 
 const store = useEngineStore()
 
-const comparison = computed(() => parseComparison(props.rule.logic))
+const valueKeys = computed(() => store.valueSources.map((s) => s.key))
+
+const comparison = computed(() => parseComparison(props.rule.logic, valueKeys.value))
 
 const paths = computed(() => entryPaths(store.rawData[props.rule.source] ?? []))
+
+/** Every values source's value paths, e.g. teetime.target_day. */
+const sourcePaths = computed(() =>
+  store.valueSources.flatMap((s) => {
+    const values = store.sourceValues[s.key]
+    return values && typeof values === 'object'
+      ? entryPaths([values as Record<string, unknown>]).map((p) => `${s.key}.${p}`)
+      : []
+  }),
+)
 
 const formFields = computed(() =>
   store.schemaFields.map((f) => {
@@ -49,7 +61,7 @@ function startComparison() {
   <div class="rule-builder">
     <template v-if="comparison">
       <OperandPicker :operand="comparison.left" :entry-paths="paths" :form-fields="formFields"
-        :label="`${rule.key} left side`" @update="(o) => setSide('left', o)" />
+        :source-paths="sourcePaths" :label="`${rule.key} left side`" @update="(o) => setSide('left', o)" />
       <div class="field">
         <div class="control">
           <div class="select">
@@ -61,7 +73,7 @@ function startComparison() {
         </div>
       </div>
       <OperandPicker :operand="comparison.right" :entry-paths="paths" :form-fields="formFields"
-        :label="`${rule.key} right side`" @update="(o) => setSide('right', o)" />
+        :source-paths="sourcePaths" :label="`${rule.key} right side`" @update="(o) => setSide('right', o)" />
     </template>
 
     <div v-else class="field">

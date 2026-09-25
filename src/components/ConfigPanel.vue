@@ -43,7 +43,7 @@ function exportConfig(): void {
       <p class="label mt-5">Import / Export</p>
       <p class="help block">
         Import or export the whole setup as one JSON object: <code>sources</code> (each
-        <code>{ key, url, listPath? }</code>), <code>schema</code> (the Options Form fields), <code>rules</code>
+        <code>{ key, url?, data?, listPath?, use? }</code>), <code>schema</code> (the Options Form fields), <code>rules</code>
         (each <code>{ key, source, enabled, logic }</code>), plus optional <code>combine</code>
         (each source's rule combination) and <code>formData</code> values. Importing replaces everything - toggles reset to each rule's <code>enabled</code>,
         and fields not in <code>formData</code> take their defaults.

@@ -14,10 +14,10 @@ are all JSON, editable at runtime:
 
 | Config | Shape | Does |
 | --- | --- | --- |
-| **Data sources** | `{ key, url, listPath? }` | `key` is the namespace rules target, and the response field the array is auto-extracted from. `listPath` is a dotted path to the list when the API wraps it (`data`, `response.items`); without it the list is found automatically. Each source is a fieldset in the Data Sources panel - rename, move, add or delete it, set its URL, fetch it on its own and preview what came back. |
+| **Data sources** | `{ key, url?, data?, listPath?, use? }` | Fetched from `url`, or pasted in as `data` (any JSON). A list source (the default) is filtered by rules: `key` is the namespace rules target, and the response field the array is auto-extracted from. `use: "values"` makes it an object of values in every rule's scope under its key, read as `{"var": "teetime.target_day"}` - the inputs a real app would supply. `listPath` is a dotted path to the list (or values object) when the data wraps it (`data`, `response.items`); without it a list is found automatically. Each source is a fieldset in the Data Sources panel - rename, move, add or delete it, set its URL, fetch it on its own and preview what came back. |
 | **Form schema** | `{ key, label, type, options?, default?, group?, classes? }` | Rendered as real `<FormKit>` inputs in the Options Form panel; `group` is the fieldset it sits in. **Copy FormKit Schema** in that panel's title bar copies the form as a FormKit schema to paste into another FormKit project (`<FormKitSchema :schema="schema" />` inside a `<FormKit type="form">`). Each fieldset becomes a FormKit group, so the form's value is shaped the way the copied rules read `formData`. Fieldsets show in the order their groups first appear; the arrows under each one move it. |
 | **Rules** | `{ key, source, enabled, logic }` | `logic` is JSON Logic. `source` says which data source it filters. Each rule is a fieldset in the JSON Rules panel - rename, move, add or delete it and edit its logic there, with a query builder or as raw JSON; the rules JSON is rebuilt on every change. |
-| **Combine** | `{ [source]: { op: "and" \| "or", items: [rule keys or groups] } }` | How each source's rules join into its result query, edited under **Combine rules** in the JSON Rules panel. A source without one ANDs all its rules; a rule switched off is skipped wherever it appears. **Copy JSON** in the panel's title bar copies one finished JSON Logic query per source, with the rules' logic written in, to paste into another app. |
+| **Combine** | `{ [source]: { op: "and" \| "or", items: [rule keys or groups] } }` | How each source's rules join into its result query, edited in the **Query Builder** in the JSON Rules panel. A source without one ANDs all its rules; a rule switched off is skipped wherever it appears. **Copy JSON** in the panel's title bar copies one finished JSON Logic query per source, with the rules' logic written in, to paste into another app. |
 
 The point is the coupling between the last two: a rule reads an entry's fields
 directly (`{"var": "rating"}`) *and* live form values via the `formData` namespace.
@@ -106,8 +106,10 @@ src/
       rules + form defaults in a single action
 - [x] **Named config presets** - save/recall e.g. "Desirable Campervan", "Holiday
       Activities" in the Configuration panel, kept in `localStorage`
-- [ ] **Data sources from JSON or JS fragments** - paste the data (or a script that
-      returns it) as well as fetching it from a URL
+- [x] **Pasted JSON sources** - as well as URLs, used as a list of entries or as values
+      in every rule's scope
+- [ ] **JS fragment sources** - a script that returns the data (needs care: it would run
+      code from shared configs)
 - [ ] **Edit form field options** - change an existing choice field's options, not only
       when adding it
 - [x] **Rule combiner** - build each source's result query from the rules with AND / OR

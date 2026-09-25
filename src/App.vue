@@ -68,8 +68,12 @@ onMounted(() => store.fetchAll())
           via local storage</s>
         </li>
         <li>
-          Data sources from JSON or JS fragments - paste the data (or a script that returns it)
-          as well as fetching it from a URL
+          <s>Data sources from pasted JSON as well as URLs, used as a list of entries or as values
+          in every rule's scope</s>
+        </li>
+        <li>
+          JS fragment sources - a script that returns the data (needs care: it would run code
+          from shared configs)
         </li>
         <li>
           Edit form field options - change an existing choice field's options, not only when

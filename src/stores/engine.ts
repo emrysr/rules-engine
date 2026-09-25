@@ -75,16 +75,33 @@ function findList(resp: unknown, key: string): Entry[] | null {
  */
 function extractList(resp: unknown, src: DataSource): Entry[] {
   if (!src.listPath) return findList(resp, src.key) ?? []
-  let node = resp
-  for (const part of src.listPath.split('.')) {
-    if (!node || typeof node !== 'object' || !(part in node)) {
-      throw new Error(`no "${src.listPath}" in the response`)
-    }
-    node = (node as Record<string, unknown>)[part]
-  }
-  const list = findList(node, src.key)
+  const list = findList(drill(resp, src.listPath), src.key)
   if (!list) throw new Error(`"${src.listPath}" isn't a list`)
   return list
+}
+
+/** Walk a dotted path down into the data; a step that isn't there is an error. */
+function drill(data: unknown, path: string): unknown {
+  let node = data
+  for (const part of path.split('.')) {
+    if (!node || typeof node !== 'object' || !(part in node)) throw new Error(`no "${path}" in the data`)
+    node = (node as Record<string, unknown>)[part]
+  }
+  return node
+}
+
+/** A values source's object: at its path if it has one, and an object, not a list. */
+function extractValues(data: unknown, src: DataSource): Record<string, unknown> {
+  const node = src.listPath ? drill(data, src.listPath) : data
+  if (!node || typeof node !== 'object' || Array.isArray(node)) {
+    throw new Error('values need to be an object, e.g. { "target_day": 3 }')
+  }
+  return node as Record<string, unknown>
+}
+
+/** Whether a source's data is pasted in rather than fetched. */
+export function isPasted(src: DataSource): boolean {
+  return src.data !== undefined
 }
 
 /** Keep only well-formed combinations from cached or imported data. */
@@ -107,6 +124,7 @@ export const useEngineStore = defineStore('engine', () => {
 
   // --- Runtime state --------------------------------------------------------
   const rawData = reactive<Record<string, Entry[]>>(cached?.rawData ?? {})
+  const sourceValues = reactive<Record<string, unknown>>(cached?.sourceValues ?? {})
   const loading = reactive<Record<string, boolean>>({})
   const errors = reactive<Record<string, string>>({})
   const formData = ref<Record<string, unknown>>(cached?.formData ?? {})
@@ -138,6 +156,10 @@ export const useEngineStore = defineStore('engine', () => {
   }
 
   const dataSources = computed(() => parsed<DataSource>(sourcesText.value, sourcesError))
+  /** Sources whose entries rules filter: each gets a query and a result. */
+  const listSources = computed(() => dataSources.value.filter((s) => s.use !== 'values'))
+  /** Sources whose values are in every rule's scope, under the source's key. */
+  const valueSources = computed(() => dataSources.value.filter((s) => s.use === 'values'))
   const schemaFields = computed(() => parsed<SchemaField>(schemaText.value, schemaError))
   const rulesConfig = computed(() => parsed<Rule>(rulesText.value, rulesError))
 
@@ -162,28 +184,47 @@ export const useEngineStore = defineStore('engine', () => {
   watch(schemaFields, seedFormData, { immediate: true })
   watch(rulesConfig, seedToggles, { immediate: true })
 
-  // --- Fetching -------------------------------------------------------------
+  // --- Loading --------------------------------------------------------------
+  /**
+   * Load a source from its URL or its pasted data, then keep it as a list of
+   * entries or, for a values source, as the object of values rules read.
+   */
   async function fetchOne(src: DataSource): Promise<void> {
-    if (!src.url) {
+    const pasted = isPasted(src)
+    if (!pasted && !src.url) {
       errors[src.key] = 'No URL yet.'
       delete rawData[src.key]
+      delete sourceValues[src.key]
       return
     }
-    loading[src.key] = true
+    loading[src.key] = !pasted
     errors[src.key] = ''
     try {
-      const res = await fetch(src.url, {
-        mode: 'cors',
-        cache: 'no-store',
-        headers: { Accept: 'application/json' },
-      })
-      if (!res.ok) throw new Error('HTTP ' + res.status)
-      rawData[src.key] = extractList(await res.json(), src)
+      let data = src.data
+      if (!pasted) {
+        const res = await fetch(src.url!, {
+          mode: 'cors',
+          cache: 'no-store',
+          headers: { Accept: 'application/json' },
+        })
+        if (!res.ok) throw new Error('HTTP ' + res.status)
+        data = await res.json()
+      }
+      if (src.use === 'values') {
+        sourceValues[src.key] = extractValues(data, src)
+        delete rawData[src.key]
+      } else {
+        rawData[src.key] = extractList(data, src)
+        delete sourceValues[src.key]
+      }
     } catch (e) {
       const message = (e as Error).message
       errors[src.key] =
-        message === 'Failed to fetch' ? 'Network/CORS error.' : 'Fetch failed: ' + message
+        message === 'Failed to fetch'
+          ? 'Network/CORS error.'
+          : (pasted ? "Can't use it: " : 'Fetch failed: ') + message
       delete rawData[src.key]
+      delete sourceValues[src.key]
     } finally {
       loading[src.key] = false
       persist()
@@ -206,15 +247,23 @@ export const useEngineStore = defineStore('engine', () => {
   /** Set when hand-edited schema JSON gives two fields the same rule path. */
   const formPathError = computed(() => findPathClash(schemaFields.value))
 
+  /** Each values source's values, by source key: in every rule's scope. */
+  const valueScope = computed<Record<string, unknown>>(() =>
+    Object.fromEntries(valueSources.value.map((s) => [s.key, sourceValues[s.key]])),
+  )
+
   /**
    * Entry fields are spread at the top level so rules read them directly;
-   * live form values are namespaced under `formData` so form inputs ARE rule
-   * inputs. A rule that throws (bad operator, missing field) counts as no match
-   * rather than breaking the whole pass.
+   * values sources sit under their keys and live form values under `formData`,
+   * so every input is in the rule's scope. A rule that throws (bad operator,
+   * missing field) counts as no match rather than breaking the whole pass.
+   * The result is judged by JSON Logic's truthiness, where an empty list is
+   * false (JavaScript's `!!` would call it true).
    */
   function evaluate(rule: Rule, entry: Entry): boolean {
     try {
-      return !!jsonLogic.apply(rule.logic, { ...entry, [FORM_NAMESPACE]: ruleFormData.value })
+      const data = { ...entry, ...valueScope.value, [FORM_NAMESPACE]: ruleFormData.value }
+      return jsonLogic.truthy(jsonLogic.apply(rule.logic, data))
     } catch {
       return false
     }
@@ -252,7 +301,7 @@ export const useEngineStore = defineStore('engine', () => {
   /** Each source's entries that pass its rule combination: the results. */
   const matchedEntries = computed<Record<string, Entry[]>>(() => {
     const out: Record<string, Entry[]> = {}
-    for (const src of dataSources.value) {
+    for (const src of listSources.value) {
       const group = combinationFor(src.key)
       const live = liveRules(src.key)
       out[src.key] = (rawData[src.key] ?? []).filter((e) =>
@@ -271,7 +320,7 @@ export const useEngineStore = defineStore('engine', () => {
    */
   const compiledQueries = computed<Record<string, unknown>>(() => {
     const out: Record<string, unknown> = {}
-    for (const src of dataSources.value) {
+    for (const src of listSources.value) {
       const live = liveRules(src.key)
       out[src.key] = compileGroup(combinationFor(src.key), (key) => live.get(key)?.logic)
     }
@@ -280,7 +329,7 @@ export const useEngineStore = defineStore('engine', () => {
 
   const sourceResults = computed<Record<string, SourceResult>>(() => {
     const out: Record<string, SourceResult> = {}
-    for (const src of dataSources.value) {
+    for (const src of listSources.value) {
       out[src.key] = {
         total: (rawData[src.key] ?? []).length,
         matched: matchedEntries.value[src.key].length,
@@ -317,7 +366,7 @@ export const useEngineStore = defineStore('engine', () => {
         sources: dataSources.value,
         schema: schemaFields.value,
         rules: rulesConfig.value,
-        combine: Object.fromEntries(dataSources.value.map((s) => [s.key, combinationFor(s.key)])),
+        combine: Object.fromEntries(listSources.value.map((s) => [s.key, combinationFor(s.key)])),
         formData: { ...formData.value },
       },
     }
@@ -572,15 +621,23 @@ export const useEngineStore = defineStore('engine', () => {
   }
 
   /**
-   * Change a source's URL or list path and refetch it straight away. A blank
-   * list path is dropped rather than stored as "".
+   * Change a source and reload it straight away. A property patched to
+   * undefined is removed (how a source switches between a URL and pasted
+   * data, or back from values to a list), and a blank list path is dropped
+   * rather than stored as "".
    */
-  function updateSource(key: string, patch: Partial<Pick<DataSource, 'url' | 'listPath'>>): string {
+  function updateSource(
+    key: string,
+    patch: Partial<Pick<DataSource, 'url' | 'data' | 'listPath' | 'use'>>,
+  ): string {
     let updated: DataSource | undefined
     const error = editSources((ss) =>
       ss.map((s) => {
         if (s.key !== key) return s
         const next: DataSource = { ...s, ...patch }
+        for (const k of Object.keys(patch) as (keyof DataSource)[]) {
+          if (next[k] === undefined) delete next[k]
+        }
         if (!next.listPath) delete next.listPath
         return (updated = next)
       }),
@@ -591,18 +648,28 @@ export const useEngineStore = defineStore('engine', () => {
   }
 
   /**
-   * Rename a source. Rules name their source by key, so they're updated to
-   * match, and its fetched data and status move with it.
+   * Rename a source. Rules name a list source by key and read a values
+   * source's values by it (`{"var": "teetime.target_day"}`), so either way
+   * they're updated to match, and its loaded data and status move with it.
    */
   function renameSource(from: string, to: string): string {
     if (dataSources.value.some((s) => s.key === to)) return `There's already a source called "${to}".`
     if (rulesError.value) {
-      return "The saved rules are invalid JSON, so the rules filtering this source can't be updated - import a config to replace them."
+      return "The saved rules are invalid JSON, so the rules using this source can't be updated - import a config to replace them."
     }
+    const isValues = dataSources.value.find((s) => s.key === from)?.use === 'values'
     const error = editSources((ss) => ss.map((s) => (s.key === from ? { ...s, key: to } : s)))
     if (error) return error
-    editRules((rs) => rs.map((r) => (r.source === from ? { ...r, source: to } : r)))
-    for (const map of [rawData, loading, errors, combine.value] as Record<string, unknown>[]) {
+    editRules((rs) =>
+      rs.map((r) => ({
+        ...r,
+        source: r.source === from ? to : r.source,
+        // Only a values source is read through vars; a list source's key could
+        // just as well be the name of one of its entries' own fields.
+        logic: isValues ? (renameVar(r.logic, from, to) as Rule['logic']) : r.logic,
+      })),
+    )
+    for (const map of [rawData, sourceValues, loading, errors, combine.value] as Record<string, unknown>[]) {
       if (from in map) {
         map[to] = map[from]
         delete map[from]
@@ -616,6 +683,7 @@ export const useEngineStore = defineStore('engine', () => {
     const error = editSources((ss) => ss.filter((s) => s.key !== key))
     if (error) return error
     delete rawData[key]
+    delete sourceValues[key]
     delete loading[key]
     delete errors[key]
     delete combine.value[key]
@@ -667,7 +735,7 @@ export const useEngineStore = defineStore('engine', () => {
   function addRule(): { key: string } | { error: string } {
     let key = 'newRule'
     for (let n = 2; rulesConfig.value.some((r) => r.key === key); n++) key = `newRule${n}`
-    const rule: Rule = { key, source: dataSources.value[0]?.key ?? '', enabled: true, logic: true }
+    const rule: Rule = { key, source: listSources.value[0]?.key ?? '', enabled: true, logic: true }
     const error = editRules((rs) => [...rs, rule])
     if (error) return { error }
     joinCombination(rule.source, key)
@@ -725,6 +793,7 @@ export const useEngineStore = defineStore('engine', () => {
       ruleToggles: { ...ruleToggles },
       combine: combine.value,
       rawData: { ...rawData },
+      sourceValues: { ...sourceValues },
       sectionOpen: { ...sectionOpen },
     })
   }
@@ -741,12 +810,15 @@ export const useEngineStore = defineStore('engine', () => {
     schemaError,
     rulesError,
     rawData,
+    sourceValues,
     loading,
     errors,
     formData,
     ruleToggles,
     sectionOpen,
     dataSources,
+    listSources,
+    valueSources,
     schemaFields,
     rulesConfig,
     ruleFormData,

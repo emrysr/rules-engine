@@ -36,14 +36,23 @@ export function parseConfig(text: string): { config: EngineConfig } | { error: s
   }
 
   const problem =
-    checkList(value.sources, 'sources', ['key', 'url']) ??
+    checkList(value.sources, 'sources', ['key']) ??
     checkList(value.schema, 'schema', ['key', 'type']) ??
     checkList(value.rules, 'rules', ['key', 'source'])
   if (problem) return { error: problem }
 
   const sources = value.sources as Record<string, unknown>[]
-  const badPath = sources.findIndex((s) => s.listPath !== undefined && typeof s.listPath !== 'string')
-  if (badPath !== -1) return { error: `sources[${badPath}].listPath must be a string when present.` }
+  for (const [i, s] of sources.entries()) {
+    if (s.data === undefined && typeof s.url !== 'string') {
+      return { error: `sources[${i}] needs a "url" string or pasted "data".` }
+    }
+    if (s.listPath !== undefined && typeof s.listPath !== 'string') {
+      return { error: `sources[${i}].listPath must be a string when present.` }
+    }
+    if (s.use !== undefined && s.use !== 'values') {
+      return { error: `sources[${i}].use must be "values" when present.` }
+    }
+  }
 
   const rules = value.rules as Record<string, unknown>[]
   const badLogic = rules.findIndex((r) => !('logic' in r))

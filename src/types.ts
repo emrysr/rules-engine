@@ -6,12 +6,22 @@ import type { RulesLogic } from 'json-logic-js'
  */
 export interface DataSource {
   key: string
-  url: string
+  /** Where the data is fetched from. A source has a `url` or pasted `data`. */
+  url?: string
+  /** Data pasted in instead of fetched: any JSON value. Present means pasted. */
+  data?: unknown
   /**
-   * Dotted path from the top of the response to the list, for APIs that wrap
-   * it (`data`, `response.items`). Without it the list is found automatically.
+   * Dotted path from the top of the data to what the source uses, for data
+   * that wraps it (`data`, `response.items`). For a list source, without it
+   * the list is found automatically.
    */
   listPath?: string
+  /**
+   * `values`: the data is an object of values put into every rule's scope
+   * under the source's key (`{"var": "teetime.target_day"}`), rather than a
+   * list of entries for rules to filter.
+   */
+  use?: 'values'
 }
 
 /** One choice of a select, radio or checkbox group: what's shown, what's stored. */
@@ -99,6 +109,8 @@ export interface PersistedState {
   ruleToggles: Record<string, boolean>
   combine?: Record<string, RuleGroup>
   rawData: Record<string, Entry[]>
+  /** What each values source last loaded, by source key. */
+  sourceValues?: Record<string, unknown>
   sectionOpen: Record<SectionName, boolean>
 }
 
