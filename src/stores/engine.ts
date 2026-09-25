@@ -877,16 +877,6 @@ export const useEngineStore = defineStore('engine', () => {
     pipelines.value = pipelines.value.filter((p) => p.name !== name)
   }
 
-  /** Swap a pipeline with its neighbour: `step` -1 moves it earlier, 1 later. */
-  function movePipeline(name: string, step: -1 | 1): void {
-    const i = pipelines.value.findIndex((p) => p.name === name)
-    const j = i + step
-    if (i < 0 || j < 0 || j >= pipelines.value.length) return
-    const next = [...pipelines.value]
-    ;[next[i], next[j]] = [next[j], next[i]]
-    pipelines.value = next
-  }
-
   function setPipelineBlocks(name: string, blocks: Block[]): void {
     pipelines.value = pipelines.value.map((p) => (p.name === name ? { ...p, blocks } : p))
   }
@@ -947,7 +937,6 @@ export const useEngineStore = defineStore('engine', () => {
     addPipeline,
     renamePipeline,
     removePipeline,
-    movePipeline,
     setPipelineBlocks,
     combinationFor,
     setCombination,

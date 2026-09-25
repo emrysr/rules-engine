@@ -82,7 +82,8 @@ function removePipeline(p: Pipeline) {
         item's own fields as well as the sources and form values, and can check a list on the
         item with <strong>has an item where</strong>. A pipeline can also read the result of the
         pipeline directly above it (as <strong>Pipeline result</strong>, e.g. <em>id is one of
-        Buyers</em>), so the pipelines build towards one answer, shown under Results.
+        Buyers</em>), so the pipelines build towards one answer, shown under Results. They stay in
+        the order they're added, as each one is built on the one above.
         <strong>Copy JSON</strong> gives the whole pipeline as one JSON Logic expression, with the
         Source Filters and the pipeline above written in - to run it, your app needs the sources
         and form values in scope, including inside <code>filter</code>, <code>map</code> and
@@ -94,10 +95,8 @@ function removePipeline(p: Pipeline) {
       <div class="fixed-grid has-1-cols">
         <div class="grid">
           <EditableFieldset v-for="(p, pi) in store.pipelines" :key="p.name" :legend="p.name" noun="pipeline"
-            vertical :auto-edit="p.name === newPipeline" :can-move-left="pi > 0"
-            :can-move-right="pi < store.pipelines.length - 1"
-            @rename="(t) => (error = store.renamePipeline(p.name, t))" @delete="removePipeline(p)"
-            @move="(step) => store.movePipeline(p.name, step)">
+            fixed :auto-edit="p.name === newPipeline"
+            @rename="(t) => (error = store.renamePipeline(p.name, t))" @delete="removePipeline(p)">
             <div class="pipeline-stack mt-2">
               <template v-for="(b, i) in p.blocks" :key="i">
                 <div v-if="i > 0" class="pipeline-arrow" aria-hidden="true">
