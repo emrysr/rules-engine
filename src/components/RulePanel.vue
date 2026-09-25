@@ -4,6 +4,7 @@ import type { Rule } from '@/types'
 import { useEngineStore } from '@/stores/engine'
 import CollapsibleBox from './CollapsibleBox.vue'
 import InlineEdit from './InlineEdit.vue'
+import RuleBuilder from './RuleBuilder.vue'
 
 const store = useEngineStore()
 
@@ -33,6 +34,14 @@ function onLogicInput(r: Rule, text: string) {
   } catch (e) {
     draftErrors[r.key] = 'Invalid JSON: ' + (e as Error).message
   }
+}
+
+// From the query builder: it replaces whatever the textarea held.
+function setLogic(r: Rule, logic: Rule['logic']) {
+  error.value = store.updateRule(r.key, { logic })
+  if (error.value) return
+  delete drafts[r.key]
+  delete draftErrors[r.key]
 }
 
 // Once the textarea is left with valid JSON, drop the draft so it reformats.
@@ -107,28 +116,40 @@ const lastIndex = computed(() => store.rulesConfig.length - 1)
                 @click="removeRule(r.key)"></button>
             </legend>
 
-            <div class="rule-meta">
-              <label class="checkbox">
-                <input v-model="store.ruleToggles[r.key]" type="checkbox" />
-                <span>Enabled</span>
-              </label>
-              <div class="select is-small">
-                <select :value="r.source" :aria-label="`${r.key} data source`"
-                  @change="error = store.updateRule(r.key, { source: ($event.target as HTMLSelectElement).value })">
-                  <option v-for="s in sourceOptions(r)" :key="s" :value="s">{{ s }}</option>
-                </select>
+            <div class="field is-grouped is-grouped-multiline rule-meta">
+              <div class="control">
+                <label class="checkbox">
+                  <input v-model="store.ruleToggles[r.key]" type="checkbox" />
+                  <span>Enabled</span>
+                </label>
               </div>
-              <span class="tag" :class="store.ruleMatchInfo[r.key]?.matches ? 'is-success' : 'is-danger'">
-                {{ store.ruleMatchInfo[r.key]?.matches ?? 0 }} /
-                {{ store.ruleMatchInfo[r.key]?.total ?? 0 }}
-              </span>
+              <div class="control">
+                <div class="select">
+                  <select :value="r.source" :aria-label="`${r.key} data source`"
+                    @change="error = store.updateRule(r.key, { source: ($event.target as HTMLSelectElement).value })">
+                    <option v-for="s in sourceOptions(r)" :key="s" :value="s">{{ s }}</option>
+                  </select>
+                </div>
+              </div>
+              <div class="control">
+                <span class="tag" :class="store.ruleMatchInfo[r.key]?.matches ? 'is-success' : 'is-danger'">
+                  {{ store.ruleMatchInfo[r.key]?.matches ?? 0 }} /
+                  {{ store.ruleMatchInfo[r.key]?.total ?? 0 }}
+                </span>
+              </div>
             </div>
 
-            <textarea class="textarea code is-size-7" :rows="rows(r)" spellcheck="false"
-              :aria-label="`${r.key} logic JSON`" :value="logicText(r)"
-              @input="onLogicInput(r, ($event.target as HTMLTextAreaElement).value)"
-              @blur="onLogicBlur(r)"></textarea>
-            <p v-if="draftErrors[r.key]" class="help is-danger">{{ draftErrors[r.key] }}</p>
+            <RuleBuilder :rule="r" @update="(logic) => setLogic(r, logic)" />
+
+            <div class="field">
+              <div class="control">
+                <textarea class="textarea code" :rows="rows(r)" spellcheck="false"
+                  :aria-label="`${r.key} logic JSON`" :value="logicText(r)"
+                  @input="onLogicInput(r, ($event.target as HTMLTextAreaElement).value)"
+                  @blur="onLogicBlur(r)"></textarea>
+              </div>
+              <p v-if="draftErrors[r.key]" class="help is-danger">{{ draftErrors[r.key] }}</p>
+            </div>
 
             <div class="form-group-actions">
               <nav class="pagination" :aria-label="`Move ${r.key}`">

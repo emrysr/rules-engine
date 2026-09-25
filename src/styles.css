@@ -15,6 +15,13 @@ details > summary {
   list-style: revert;
 }
 
+/* Chrome wraps a <details> body in a content-box ::details-content box, and
+   Bulma's `box-sizing: inherit` hands that down, so padded controls (a lone
+   .select) overflow their wrappers. Restore border-box below it. */
+details > * {
+  box-sizing: border-box;
+}
+
 details details {
   margin: 0.75rem 0 0.25rem 0;
   border-left: 3px solid #dbdbdb;
@@ -173,11 +180,19 @@ label.radio > span:last-child {
   margin-left: 0.4em;
 }
 
-/* A rule's toggle, source and match count, in one wrapping row above its logic. */
+/* Bulma drops the margin after a container's last .field; keep the builder's
+   last row off the JSON below it. */
+.rule-builder {
+  margin-bottom: 0.75rem;
+}
+
+/* The kind picker keeps its width; the field or value beside it takes the rest. */
+.operand .control:first-child {
+  flex-shrink: 0;
+}
+
+/* A rule's toggle, source and match count: centre the checkbox and tag on the select. */
 .rule-meta {
-  display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem 0.75rem;
-  margin: 0.5rem 0 0.75rem;
+  margin-top: 0.5rem;
 }
