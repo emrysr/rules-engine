@@ -66,6 +66,9 @@ function deleteGroup(name: string, fields: SchemaField[]) {
       </p>
 
       <p v-if="error" class="help is-danger mb-3">{{ error }}</p>
+      <p v-if="store.schemaError" class="help is-danger mb-3">
+        The saved form schema is invalid JSON — import a config to replace it.
+      </p>
       <p v-if="store.formPathError" class="help is-warning mb-3">{{ store.formPathError }}</p>
 
       <FormKit v-model="store.formData" type="group">

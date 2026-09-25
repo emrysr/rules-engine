@@ -227,12 +227,14 @@ export const useEngineStore = defineStore('engine', () => {
   function exportConfig(): { config: EngineConfig } | { error: string } {
     const invalid = (
       [
-        ['sources', sourcesError],
-        ['schema', schemaError],
+        ['data sources', sourcesError],
+        ['form schema', schemaError],
         ['rules', rulesError],
       ] as const
     ).find(([, err]) => err.value)
-    if (invalid) return { error: `Fix the invalid ${invalid[0]} JSON before exporting.` }
+    if (invalid) {
+      return { error: `The saved ${invalid[0]} can't be read (invalid JSON), so export would lose them — import a config to replace them.` }
+    }
     return {
       config: {
         sources: dataSources.value,
@@ -316,7 +318,7 @@ export const useEngineStore = defineStore('engine', () => {
    * Returns an error message, or '' on success.
    */
   function editSchema(edit: (fields: SchemaField[]) => SchemaField[]): string {
-    if (schemaError.value) return 'Fix the invalid schema JSON before editing the form.'
+    if (schemaError.value) return 'The saved form schema is invalid JSON — import a config to replace it.'
     const before = schemaFields.value
     const after = edit(before)
 
@@ -331,7 +333,7 @@ export const useEngineStore = defineStore('engine', () => {
       if (old) renames.push([rulePath(old), rulePath(f)])
     }
     if (renames.length && rulesError.value) {
-      return 'Fix the invalid rules JSON first — renaming updates the rules that read this field.'
+      return "The saved rules are invalid JSON, so the rules reading this field can't be updated — import a config to replace them."
     }
 
     schemaText.value = JSON.stringify(after, null, 2)
@@ -477,7 +479,7 @@ export const useEngineStore = defineStore('engine', () => {
    * combined list. Refuses while that JSON is invalid, as editRules does.
    */
   function editSources(edit: (sources: DataSource[]) => DataSource[]): string {
-    if (sourcesError.value) return 'Fix the invalid sources JSON before editing the data sources.'
+    if (sourcesError.value) return 'The saved data sources are invalid JSON — import a config to replace them.'
     sourcesText.value = JSON.stringify(edit(dataSources.value), null, 2)
     return ''
   }
@@ -505,7 +507,7 @@ export const useEngineStore = defineStore('engine', () => {
   function renameSource(from: string, to: string): string {
     if (dataSources.value.some((s) => s.key === to)) return `There's already a source called "${to}".`
     if (rulesError.value) {
-      return 'Fix the invalid rules JSON first — renaming a source updates the rules that filter it.'
+      return "The saved rules are invalid JSON, so the rules filtering this source can't be updated — import a config to replace them."
     }
     const error = editSources((ss) => ss.map((s) => (s.key === from ? { ...s, key: to } : s)))
     if (error) return error
@@ -549,7 +551,7 @@ export const useEngineStore = defineStore('engine', () => {
    * Returns an error message, or '' on success.
    */
   function editRules(edit: (rules: Rule[]) => Rule[]): string {
-    if (rulesError.value) return 'Fix the invalid rules JSON before editing the rules.'
+    if (rulesError.value) return 'The saved rules are invalid JSON — import a config to replace them.'
     rulesText.value = JSON.stringify(edit(rulesConfig.value), null, 2)
     return ''
   }
