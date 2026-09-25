@@ -31,6 +31,7 @@ details details {
 /* Each fieldset is a Bulma grid cell; the Add button sits bottom right, so
    cells of different heights still line their buttons up at the bottom. */
 fieldset.form-group {
+  position: relative;
   display: flex;
   flex-direction: column;
   border: 1px solid var(--bulma-border);
@@ -43,6 +44,25 @@ fieldset.form-group > legend {
   padding: 0 0.4rem;
   margin-bottom: 0;
   text-align: left;
+}
+
+/* The fieldset's delete button, in the fieldset's top-right corner, in line
+   with its fields' delete buttons below. */
+fieldset.form-group > legend > .delete {
+  position: absolute;
+  right: 1rem;
+}
+
+/* The grid's trailing Add cell: a dashed outline of the next fieldset's slot,
+   button centred. Stretches to the row's height alongside real fieldsets. */
+.grid-add-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 8rem;
+  border: 1px dashed var(--bulma-border);
+  border-radius: var(--bulma-radius);
+  padding: 1rem;
 }
 
 /* Move arrows on the left, Add on the right. */

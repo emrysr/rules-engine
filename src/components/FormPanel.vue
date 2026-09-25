@@ -7,6 +7,7 @@ import EditableFieldset from './EditableFieldset.vue'
 import FieldOptionsDialog from './FieldOptionsDialog.vue'
 import FieldTypeMenu from './FieldTypeMenu.vue'
 import FormFields from './FormFields.vue'
+import GridAddCell from './GridAddCell.vue'
 
 const store = useEngineStore()
 
@@ -57,16 +58,12 @@ function deleteGroup(name: string, fields: SchemaField[]) {
 <template>
   <CollapsibleBox section="form" title="Options">
     <div class="mt-3">
-      <div class="block content">
-
-        <p class="help level-left">
-          These selections are live inputs into the rules below — every change here re-runs the
-          filtering and updates the match counts and results in real time. Click a label or
-          fieldset title to rename it; the path under each input is how rules read it, and
-          renaming updates the rules to match.
-        </p>
-        <button type="button" class="button" @click="addGroup">Add group</button>
-      </div>
+      <p class="help block">
+        These selections are live inputs into the rules below — every change here re-runs the
+        filtering and updates the match counts and results in real time. Click a label or
+        fieldset title to rename it; the path under each input is how rules read it, and
+        renaming updates the rules to match.
+      </p>
 
       <p v-if="error" class="help is-danger mb-3">{{ error }}</p>
       <p v-if="store.formPathError" class="help is-warning mb-3">{{ store.formPathError }}</p>
@@ -92,6 +89,7 @@ function deleteGroup(name: string, fields: SchemaField[]) {
                 <FormFields :fields="g.fields" @error="(e) => (error = e)" />
               </div>
             </template>
+            <GridAddCell label="Add group" @add="addGroup" />
           </div>
         </div>
       </FormKit>

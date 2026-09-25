@@ -4,6 +4,7 @@ import type { Rule } from '@/types'
 import { useEngineStore } from '@/stores/engine'
 import CollapsibleBox from './CollapsibleBox.vue'
 import EditableFieldset from './EditableFieldset.vue'
+import GridAddCell from './GridAddCell.vue'
 import RuleBuilder from './RuleBuilder.vue'
 
 const store = useEngineStore()
@@ -106,15 +107,12 @@ const lastIndex = computed(() => store.rulesConfig.length - 1)
 <template>
   <CollapsibleBox section="rules" title="Rules">
     <div class="mt-3">
-      <div class="block content">
-        <p class="help">
-          Each rule filters one data source; an entry is a result when it passes every enabled
-          rule for its source. Click a rule's name to rename it. Its logic is JSON Logic — entry
-          fields directly, form fields via <code>formData.&lt;group&gt;.&lt;label&gt;</code> — and
-          every edit here rebuilds the combined rules JSON in the Config panel.
-        </p>
-        <button type="button" class="button" @click="addRule">Add rule</button>
-      </div>
+      <p class="help block">
+        Each rule filters one data source; an entry is a result when it passes every enabled
+        rule for its source. Click a rule's name to rename it. Its logic is JSON Logic — entry
+        fields directly, form fields via <code>formData.&lt;group&gt;.&lt;label&gt;</code> — and
+        every edit here rebuilds the combined rules JSON in the Config panel.
+      </p>
 
       <p v-if="error" class="help is-danger mb-3">{{ error }}</p>
       <p v-if="store.rulesError" class="help is-danger mb-3">
@@ -169,9 +167,9 @@ const lastIndex = computed(() => store.rulesConfig.length - 1)
               </button>
             </template>
           </EditableFieldset>
+          <GridAddCell label="Add rule" @add="addRule" />
         </div>
       </div>
-      <p v-if="!store.rulesConfig.length && !store.rulesError" class="help">No rules defined.</p>
     </div>
   </CollapsibleBox>
 </template>
