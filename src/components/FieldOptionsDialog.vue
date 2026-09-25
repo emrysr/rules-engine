@@ -82,7 +82,7 @@ function submit() {
 /**
  * Soft dismiss: `closedby="any"` has the browser close the dialog on Escape or
  * a click on the backdrop. Where closedby isn't supported yet (Escape still
- * works there), a backdrop click is caught by hand — only when the press also
+ * works there), a backdrop click is caught by hand - only when the press also
  * began on the backdrop, so a text selection dragged out of the card doesn't
  * close it. The card fills the dialog, so only the backdrop targets the dialog.
  */

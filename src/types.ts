@@ -42,7 +42,7 @@ export interface SchemaField {
 }
 
 /**
- * A single filter. `enabled` is only the *default* toggle state — live toggle
+ * A single filter. `enabled` is only the *default* toggle state - live toggle
  * state lives in the store's `ruleToggles` so editing the rules JSON never
  * clobbers what the user has switched on or off.
  */

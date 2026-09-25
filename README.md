@@ -14,16 +14,16 @@ are all JSON, editable at runtime:
 
 | Config | Shape | Does |
 | --- | --- | --- |
-| **Data sources** | `{ key, url, listPath? }` | `key` is the namespace rules target, and the response field the array is auto-extracted from. `listPath` is a dotted path to the list when the API wraps it (`data`, `response.items`); without it the list is found automatically. Each source is a fieldset in the Data Sources panel — rename, move, add or delete it, set its URL, fetch it on its own and preview what came back. |
-| **Form schema** | `{ key, label, type, options?, default?, group?, classes? }` | Rendered as real `<FormKit>` inputs in the Options Form panel; `group` is the fieldset it sits in. **Copy JSON** in that panel's title bar copies these definitions. Fieldsets show in the order their groups first appear; the arrows under each one move it. |
-| **Rules** | `{ key, source, enabled, logic }` | `logic` is JSON Logic. `source` says which data source it filters. Each rule is a fieldset in the JSON Rules panel — rename, move, add or delete it and edit its logic there, with a query builder or as raw JSON; the rules JSON is rebuilt on every change. **Copy JSON** in the panel's title bar copies the rules, with `enabled` set to each checkbox as it stands, to paste into another app. |
+| **Data sources** | `{ key, url, listPath? }` | `key` is the namespace rules target, and the response field the array is auto-extracted from. `listPath` is a dotted path to the list when the API wraps it (`data`, `response.items`); without it the list is found automatically. Each source is a fieldset in the Data Sources panel - rename, move, add or delete it, set its URL, fetch it on its own and preview what came back. |
+| **Form schema** | `{ key, label, type, options?, default?, group?, classes? }` | Rendered as real `<FormKit>` inputs in the Options Form panel; `group` is the fieldset it sits in. **Copy JSON** in that panel's title bar copies the form as a FormKit schema to paste into another FormKit project (`<FormKitSchema :schema="schema" />` inside a `<FormKit type="form">`). Each fieldset becomes a FormKit group, so the form's value is shaped the way the copied rules read `formData`. Fieldsets show in the order their groups first appear; the arrows under each one move it. |
+| **Rules** | `{ key, source, enabled, logic }` | `logic` is JSON Logic. `source` says which data source it filters. Each rule is a fieldset in the JSON Rules panel - rename, move, add or delete it and edit its logic there, with a query builder or as raw JSON; the rules JSON is rebuilt on every change. **Copy JSON** in the panel's title bar copies the rules, with `enabled` set to each checkbox as it stands, to paste into another app. |
 
 The point is the coupling between the last two: a rule reads an entry's fields
 directly (`{"var": "rating"}`) *and* live form values via the `formData` namespace.
 A form value's path is its fieldset legend and label, snake_cased: "Minimum product
 rating" in the "Products" fieldset is `{"var": "formData.products.minimum_product_rating"}`
 (an ungrouped field is just `formData.<label>`). Renaming a label or legend in the form
-rewrites the rules that read it. Form inputs are rule inputs, not UI decoration —
+rewrites the rules that read it. Form inputs are rule inputs, not UI decoration -
 change a field and every match count re-runs.
 
 ```json
@@ -43,7 +43,7 @@ change a field and every match count re-runs.
   items" with an inline error rather than tearing down the app.
 - **A rule that throws counts as no match.** A bad operator or missing field shouldn't
   break the whole evaluation pass.
-- **Everything persists to `localStorage`**, including fetched data — so a cold start
+- **Everything persists to `localStorage`**, including fetched data - so a cold start
   (or an offline one) renders immediately and refreshes in the background.
 
 ## Running it
@@ -55,7 +55,7 @@ npm run build      # type-check + production build
 npm run preview
 ```
 
-Commit the `package-lock.json` that `npm install` produces — then switch the workflow
+Commit the `package-lock.json` that `npm install` produces - then switch the workflow
 to `npm ci` and re-enable `cache: npm` for faster, reproducible CI builds.
 
 ## Deployment
@@ -92,13 +92,13 @@ src/
 
 ## Todo
 
-- [ ] **JSON rules editor** — replace the raw JSON textarea with a rule builder
+- [ ] **JSON rules editor** - replace the raw JSON textarea with a rule builder
       (field / operator / value pickers instead of hand-written JSON Logic)
-- [ ] **FormKit schema editor** — replace the raw JSON textarea with a field builder
+- [ ] **FormKit schema editor** - replace the raw JSON textarea with a field builder
       (add/edit/reorder fields, pick type, set options)
-- [x] **Import a complete config object** — one JSON blob covering sources + schema +
+- [x] **Import a complete config object** - one JSON blob covering sources + schema +
       rules + form defaults in a single action
-- [ ] **Named config presets** — save/recall e.g. "Desirable Campervan", "Holiday
+- [ ] **Named config presets** - save/recall e.g. "Desirable Campervan", "Holiday
       Activities"
 
 Known rough edge: the full Bulma stylesheet is ~710 KB uncompressed (72 KB gzipped)

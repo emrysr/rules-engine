@@ -2,7 +2,7 @@ import type { SchemaField } from '@/types'
 
 /**
  * How rules address form values. A field's rule path is built from what the
- * user sees — its group's legend and its label, snake_cased — so a field
+ * user sees - its group's legend and its label, snake_cased - so a field
  * labelled "Minimum product rating" in the "Products" fieldset is read as
  * `formData.products.minimum_product_rating`. Values themselves stay stored
  * under the field's stable `key`, so renaming never loses one.
@@ -42,7 +42,7 @@ export function pathClash(field: SchemaField, others: SchemaField[]): SchemaFiel
 }
 
 /**
- * Describe the first pair of fields whose paths collide — the same path, or
+ * Describe the first pair of fields whose paths collide - the same path, or
  * one nested under the other (an ungrouped "Products" field vs the Products
  * group). '' when every path is distinct.
  */

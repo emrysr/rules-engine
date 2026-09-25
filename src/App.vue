@@ -38,36 +38,36 @@ onMounted(() => store.fetchAll())
       <p class="has-text-weight-semibold mb-2">Roadmap</p>
       <ul>
         <li>
-          <s>JSON rules editor — replace the raw JSON textarea with a proper rule builder (field /
+          <s>JSON rules editor - replace the raw JSON textarea with a proper rule builder (field /
           operator / value pickers instead of hand-written JSON Logic)</s>
         </li>
         <li>
-          <s>FormKit schema editor — replace the raw JSON textarea with a field builder (add/edit/
+          <s>FormKit schema editor - replace the raw JSON textarea with a field builder (add/edit/
           reorder fields, pick type, set options)</s>
         </li>
         <li>
-          <s>Data sources editor — add, rename, reorder and delete sources, fetch each on its own
+          <s>Data sources editor - add, rename, reorder and delete sources, fetch each on its own
           or all at once, and preview what came back</s>
         </li>
         <li>
-          <s>One fieldset pattern for sources, options and rules — click-to-rename, move left /
+          <s>One fieldset pattern for sources, options and rules - click-to-rename, move left /
           right, delete, and an Add cell in the next grid slot</s>
         </li>
         <li>
-          <s>Renames carry through — renaming a form field, fieldset or source rewrites the rules
+          <s>Renames carry through - renaming a form field, fieldset or source rewrites the rules
           that use it</s>
         </li>
         <li>
           <s>Per-rule raw JSON view, toggled from the query builder</s>
         </li>
         <li>
-          <s>Hide the raw config JSON — the whole setup moves in and out through Import / Export</s>
+          <s>Hide the raw config JSON - the whole setup moves in and out through Import / Export</s>
         </li>
         <li>
           AND / OR groups in the rule builder, so one rule can hold several comparisons
         </li>
         <li>
-          Type-aware builder — offer operators and value inputs to suit the field (numbers, text,
+          Type-aware builder - offer operators and value inputs to suit the field (numbers, text,
           lists)
         </li>
         <li>

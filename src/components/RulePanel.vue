@@ -123,14 +123,14 @@ function rulesToCopy() {
     <div class="mt-3">
       <p class="help block">
         Each rule filters one data source; an entry is a result when it passes every enabled
-        rule for its source. Click a rule's name to rename it. Its logic is JSON Logic — entry
-        fields directly, form fields via <code>formData.&lt;group&gt;.&lt;label&gt;</code> — and
+        rule for its source. Click a rule's name to rename it. Its logic is JSON Logic - entry
+        fields directly, form fields via <code>formData.&lt;group&gt;.&lt;label&gt;</code> - and
         every edit here rebuilds the combined rules JSON that Export includes.
       </p>
 
       <p v-if="error" class="help is-danger mb-3">{{ error }}</p>
       <p v-if="store.rulesError" class="help is-danger mb-3">
-        The saved rules are invalid JSON — import a config to replace them.
+        The saved rules are invalid JSON - import a config to replace them.
       </p>
 
       <div class="fixed-grid has-1-cols-mobile has-2-cols-tablet has-3-cols-desktop">

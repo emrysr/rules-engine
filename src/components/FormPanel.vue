@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { SchemaField } from '@/types'
+import { toFormKitSchema } from '@/formkitSchema'
 import { useEngineStore } from '@/stores/engine'
 import CollapsibleBox from './CollapsibleBox.vue'
 import CopyJsonButton from './CopyJsonButton.vue'
@@ -15,7 +16,7 @@ const store = useEngineStore()
 /**
  * Fields bucketed by their `group`, in the store's group order. Ungrouped
  * fields form their own bucket (legend null) and render without a fieldset.
- * Grouping is presentation only — formData stays flat.
+ * Grouping is presentation only - formData stays flat.
  */
 const fieldGroups = computed(() =>
   store.groupOrder.map((legend) => ({
@@ -23,6 +24,11 @@ const fieldGroups = computed(() =>
     fields: store.schemaFields.filter((f) => (f.group || null) === legend),
   })),
 )
+
+/** What Copy JSON copies: the form as a FormKit schema for another project. */
+function formKitSchema() {
+  return toFormKitSchema(store.schemaFields, store.groupOrder)
+}
 
 const error = ref('')
 /** The group just created, so its legend opens straight into editing. */
@@ -59,20 +65,28 @@ function deleteGroup(name: string, fields: SchemaField[]) {
 <template>
   <CollapsibleBox section="form" title="Options Form">
     <template #actions>
-      <CopyJsonButton :value="() => store.schemaFields" :disabled="!store.schemaFields.length"
-        title="Copy the form's field definitions as JSON" />
+      <CopyJsonButton :value="formKitSchema" :disabled="!store.schemaFields.length"
+        title="Copy the form as a FormKit schema" />
     </template>
     <div class="mt-3">
       <p class="help block">
-        These selections are live inputs into the rules below — every change here re-runs the
-        filtering and updates the match counts and results in real time. Click a label or
-        fieldset title to rename it; the path under each input is how rules read it, and
-        renaming updates the rules to match.
+        These are real <a href="https://formkit.com" target="_blank" rel="noopener">FormKit</a>
+        inputs, and live inputs into the rules below: every change re-runs the filtering and
+        updates the match counts and results. Click a label or fieldset title to rename it; the
+        path under each input is how rules read it, and renaming updates the rules to match.
+      </p>
+      <p class="help block">
+        <strong>Copy JSON</strong> gives you the form as a FormKit schema, ready to paste into an
+        existing FormKit project and render with
+        <code>&lt;FormKit type="form"&gt;&lt;FormKitSchema :schema="schema" /&gt;&lt;/FormKit&gt;</code>.
+        Each fieldset becomes a FormKit group, so the form's value has the same
+        <code>formData.&lt;group&gt;.&lt;label&gt;</code> shape the copied JSON Rules read - pass it
+        to them as <code>formData</code>.
       </p>
 
       <p v-if="error" class="help is-danger mb-3">{{ error }}</p>
       <p v-if="store.schemaError" class="help is-danger mb-3">
-        The saved form schema is invalid JSON — import a config to replace it.
+        The saved form schema is invalid JSON - import a config to replace it.
       </p>
       <p v-if="store.formPathError" class="help is-warning mb-3">{{ store.formPathError }}</p>
 

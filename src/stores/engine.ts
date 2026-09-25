@@ -44,7 +44,7 @@ function saveCache(data: PersistedState): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
   } catch {
-    // Quota or private-mode failures are non-fatal — the app works without cache.
+    // Quota or private-mode failures are non-fatal - the app works without cache.
   }
 }
 
@@ -249,7 +249,7 @@ export const useEngineStore = defineStore('engine', () => {
   // --- Whole-config import / export -----------------------------------------
   /**
    * Snapshot the current setup as one blob. Refuses while any section holds
-   * invalid JSON — exporting it as `[]` would silently lose that section.
+   * invalid JSON - exporting it as `[]` would silently lose that section.
    */
   function exportConfig(): { config: EngineConfig } | { error: string } {
     const invalid = (
@@ -260,7 +260,7 @@ export const useEngineStore = defineStore('engine', () => {
       ] as const
     ).find(([, err]) => err.value)
     if (invalid) {
-      return { error: `The saved ${invalid[0]} can't be read (invalid JSON), so export would lose them — import a config to replace them.` }
+      return { error: `The saved ${invalid[0]} can't be read (invalid JSON), so export would lose them - import a config to replace them.` }
     }
     return {
       config: {
@@ -345,7 +345,7 @@ export const useEngineStore = defineStore('engine', () => {
    * Returns an error message, or '' on success.
    */
   function editSchema(edit: (fields: SchemaField[]) => SchemaField[]): string {
-    if (schemaError.value) return 'The saved form schema is invalid JSON — import a config to replace it.'
+    if (schemaError.value) return 'The saved form schema is invalid JSON - import a config to replace it.'
     const before = schemaFields.value
     const after = edit(before)
 
@@ -360,7 +360,7 @@ export const useEngineStore = defineStore('engine', () => {
       if (old) renames.push([rulePath(old), rulePath(f)])
     }
     if (renames.length && rulesError.value) {
-      return "The saved rules are invalid JSON, so the rules reading this field can't be updated — import a config to replace them."
+      return "The saved rules are invalid JSON, so the rules reading this field can't be updated - import a config to replace them."
     }
 
     schemaText.value = JSON.stringify(after, null, 2)
@@ -463,7 +463,7 @@ export const useEngineStore = defineStore('engine', () => {
 
   /**
    * Delete a group along with its fields and their values. Rules reading
-   * those fields are left as they are — see rulesReading for warning first.
+   * those fields are left as they are - see rulesReading for warning first.
    */
   function removeGroup(name: string): string {
     const keys = schemaFields.value.filter((f) => f.group === name).map((f) => f.key)
@@ -506,7 +506,7 @@ export const useEngineStore = defineStore('engine', () => {
    * combined list. Refuses while that JSON is invalid, as editRules does.
    */
   function editSources(edit: (sources: DataSource[]) => DataSource[]): string {
-    if (sourcesError.value) return 'The saved data sources are invalid JSON — import a config to replace them.'
+    if (sourcesError.value) return 'The saved data sources are invalid JSON - import a config to replace them.'
     sourcesText.value = JSON.stringify(edit(dataSources.value), null, 2)
     return ''
   }
@@ -545,7 +545,7 @@ export const useEngineStore = defineStore('engine', () => {
   function renameSource(from: string, to: string): string {
     if (dataSources.value.some((s) => s.key === to)) return `There's already a source called "${to}".`
     if (rulesError.value) {
-      return "The saved rules are invalid JSON, so the rules filtering this source can't be updated — import a config to replace them."
+      return "The saved rules are invalid JSON, so the rules filtering this source can't be updated - import a config to replace them."
     }
     const error = editSources((ss) => ss.map((s) => (s.key === from ? { ...s, key: to } : s)))
     if (error) return error
@@ -589,7 +589,7 @@ export const useEngineStore = defineStore('engine', () => {
    * Returns an error message, or '' on success.
    */
   function editRules(edit: (rules: Rule[]) => Rule[]): string {
-    if (rulesError.value) return 'The saved rules are invalid JSON — import a config to replace them.'
+    if (rulesError.value) return 'The saved rules are invalid JSON - import a config to replace them.'
     rulesText.value = JSON.stringify(edit(rulesConfig.value), null, 2)
     return ''
   }

@@ -5,7 +5,7 @@ import CollapsibleBox from './CollapsibleBox.vue'
 
 const store = useEngineStore()
 
-// The blob is scratch space, not config — it isn't persisted, and editing it
+// The blob is scratch space, not config - it isn't persisted, and editing it
 // changes nothing until Import is pressed.
 const configText = ref('')
 const configError = ref('')
@@ -13,7 +13,7 @@ const configNotice = ref('')
 
 function importConfig(): void {
   configError.value = store.importConfig(configText.value)
-  configNotice.value = configError.value ? '' : 'Imported — refetching data sources.'
+  configNotice.value = configError.value ? '' : 'Imported - refetching data sources.'
 }
 
 function exportConfig(): void {
@@ -25,7 +25,7 @@ function exportConfig(): void {
   }
   configText.value = JSON.stringify(result.config, null, 2)
   configError.value = ''
-  configNotice.value = 'Current config exported — copy it, or edit and re-import.'
+  configNotice.value = 'Current config exported - copy it, or edit and re-import.'
 }
 </script>
 
@@ -36,7 +36,7 @@ function exportConfig(): void {
         Import or export the whole setup as one JSON object: <code>sources</code> (each
         <code>{ key, url, listPath? }</code>), <code>schema</code> (the Options Form fields), <code>rules</code>
         (each <code>{ key, source, enabled, logic }</code>), plus optional <code>formData</code>
-        values. Importing replaces everything — toggles reset to each rule's <code>enabled</code>,
+        values. Importing replaces everything - toggles reset to each rule's <code>enabled</code>,
         and fields not in <code>formData</code> take their defaults.
       </p>
       <div class="field">

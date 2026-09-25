@@ -17,7 +17,7 @@ const bulmaSections: Record<string, string> = {
   message: 'help is-danger',
 }
 
-// Native controls Bulma leaves unstyled — `.input` would give them a text box.
+// Native controls Bulma leaves unstyled - `.input` would give them a text box.
 const plainInputs = new Set(['color', 'range', 'file'])
 
 function bulmaClasses(section: string, type: unknown): string {

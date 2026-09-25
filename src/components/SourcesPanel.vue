@@ -49,7 +49,7 @@ function removeSource(key: string) {
 
       <p v-if="error" class="help is-danger mb-3">{{ error }}</p>
       <p v-if="store.sourcesError" class="help is-danger mb-3">
-        The saved data sources are invalid JSON — import a config to replace them.
+        The saved data sources are invalid JSON - import a config to replace them.
       </p>
 
       <div class="fixed-grid has-1-cols-mobile has-2-cols-tablet has-3-cols-desktop">

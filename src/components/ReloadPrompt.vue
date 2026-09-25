@@ -3,7 +3,7 @@ import { useRegisterSW } from 'virtual:pwa-register/vue'
 
 /**
  * The service worker updates itself (registerType: 'autoUpdate'), but a silent
- * swap mid-session is disorienting — this surfaces it and lets the user choose
+ * swap mid-session is disorienting - this surfaces it and lets the user choose
  * when to take the new build.
  */
 const { offlineReady, needRefresh, updateServiceWorker } = useRegisterSW()

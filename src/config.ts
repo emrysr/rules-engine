@@ -19,7 +19,7 @@ function checkList(value: unknown, name: string, stringFields: string[]): string
 }
 
 /**
- * Parse and validate a complete config blob. Validation is structural only —
+ * Parse and validate a complete config blob. Validation is structural only -
  * enough that an import can't leave the app holding a shape it can't render.
  * Whether a rule's JSON Logic makes sense is still decided at evaluation time.
  */

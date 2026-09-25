@@ -65,7 +65,7 @@ function startComparison() {
     </template>
 
     <div v-else class="field">
-      <p class="help mb-2">This rule's logic isn't a single comparison — use Edit JSON to change it.</p>
+      <p class="help mb-2">This rule's logic isn't a single comparison - use Edit JSON to change it.</p>
       <div class="control">
         <button type="button" class="button" @click="startComparison">Replace with a comparison</button>
       </div>
