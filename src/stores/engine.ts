@@ -10,6 +10,7 @@ import {
   pathClash,
   renameVar,
   rulePath,
+  varPaths,
 } from '@/paths'
 import type {
   DataSource,
@@ -426,6 +427,32 @@ export const useEngineStore = defineStore('engine', () => {
     return ''
   }
 
+  /**
+   * Delete a group along with its fields and their values. Rules reading
+   * those fields are left as they are — see rulesReading for warning first.
+   */
+  function removeGroup(name: string): string {
+    const keys = schemaFields.value.filter((f) => f.group === name).map((f) => f.key)
+    const error = editSchema((fs) => fs.filter((f) => f.group !== name))
+    if (error) return error
+    emptyGroups.value = emptyGroups.value.filter((e) => e.name !== name)
+    // As in removeField: drop values only once their inputs have unmounted.
+    nextTick(() => {
+      const next = { ...formData.value }
+      for (const key of keys) delete next[key]
+      formData.value = next
+    })
+    return ''
+  }
+
+  /** Keys of the rules that read any of these form fields. */
+  function rulesReading(fields: SchemaField[]): string[] {
+    const paths = fields.map(rulePath)
+    return rulesConfig.value
+      .filter((r) => varPaths(r.logic).some((v) => paths.some((p) => v === p || v.startsWith(p + '.'))))
+      .map((r) => r.key)
+  }
+
   /** Swap a group with its neighbour: `step` -1 moves it earlier, 1 later. */
   function moveGroup(name: string, step: -1 | 1): string {
     const order = [...groupOrder.value]
@@ -544,6 +571,8 @@ export const useEngineStore = defineStore('engine', () => {
     removeField,
     addGroup,
     renameGroup,
+    removeGroup,
+    rulesReading,
     moveGroup,
     addRule,
     updateRule,

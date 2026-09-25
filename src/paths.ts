@@ -78,6 +78,18 @@ export function buildRuleData(
   return out
 }
 
+/** Every literal `var` path in a JSON Logic tree (computed paths are skipped). */
+export function varPaths(logic: unknown): string[] {
+  if (Array.isArray(logic)) return logic.flatMap(varPaths)
+  if (!logic || typeof logic !== 'object') return []
+  return Object.entries(logic).flatMap(([op, arg]) => {
+    if (op !== 'var') return varPaths(arg)
+    if (typeof arg === 'string') return [arg]
+    if (Array.isArray(arg) && typeof arg[0] === 'string') return [arg[0]]
+    return []
+  })
+}
+
 function swapPath(path: string, from: string, to: string): string {
   if (path === from) return to
   if (path.startsWith(from + '.')) return to + path.slice(from.length)

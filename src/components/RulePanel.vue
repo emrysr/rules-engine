@@ -3,7 +3,7 @@ import { computed, reactive, ref } from 'vue'
 import type { Rule } from '@/types'
 import { useEngineStore } from '@/stores/engine'
 import CollapsibleBox from './CollapsibleBox.vue'
-import InlineEdit from './InlineEdit.vue'
+import EditableFieldset from './EditableFieldset.vue'
 import RuleBuilder from './RuleBuilder.vue'
 
 const store = useEngineStore()
@@ -109,13 +109,10 @@ const lastIndex = computed(() => store.rulesConfig.length - 1)
 
       <div class="fixed-grid has-1-cols-mobile has-2-cols-tablet has-3-cols-desktop">
         <div class="grid">
-          <fieldset v-for="(r, i) in store.rulesConfig" :key="r.key" class="cell form-group">
-            <legend class="label field-label">
-              <InlineEdit :text="r.key" :auto-edit="r.key === newRule" @save="(t) => renameRule(r.key, t)" />
-              <button type="button" class="delete" title="Delete rule" :aria-label="`Delete ${r.key}`"
-                @click="removeRule(r.key)"></button>
-            </legend>
-
+          <EditableFieldset v-for="(r, i) in store.rulesConfig" :key="r.key" :legend="r.key" noun="rule"
+            :auto-edit="r.key === newRule" :can-move-left="i > 0" :can-move-right="i < lastIndex"
+            @rename="(t) => renameRule(r.key, t)" @delete="removeRule(r.key)"
+            @move="(step) => (error = store.moveRule(r.key, step))">
             <div class="field is-grouped is-grouped-multiline rule-meta">
               <div class="control">
                 <label class="checkbox">
@@ -150,22 +147,7 @@ const lastIndex = computed(() => store.rulesConfig.length - 1)
               </div>
               <p v-if="draftErrors[r.key]" class="help is-danger">{{ draftErrors[r.key] }}</p>
             </div>
-
-            <div class="form-group-actions">
-              <nav class="pagination" :aria-label="`Move ${r.key}`">
-                <button type="button" class="pagination-previous" title="Move rule left"
-                  :aria-label="`Move ${r.key} left`" :disabled="i === 0"
-                  @click="error = store.moveRule(r.key, -1)">
-                  <svg class="move-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>
-                </button>
-                <button type="button" class="pagination-next" title="Move rule right"
-                  :aria-label="`Move ${r.key} right`" :disabled="i === lastIndex"
-                  @click="error = store.moveRule(r.key, 1)">
-                  <svg class="move-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
-                </button>
-              </nav>
-            </div>
-          </fieldset>
+          </EditableFieldset>
         </div>
       </div>
       <p v-if="!store.rulesConfig.length && !store.rulesError" class="help">No rules defined.</p>
