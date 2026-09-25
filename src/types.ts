@@ -84,7 +84,7 @@ export interface MatchInfo {
   matches: number
 }
 
-/** Per-source count after its Source Filter (its enabled rules, combined) is applied. */
+/** Per-source count after its Data Filter (its enabled rules, combined) is applied. */
 export interface SourceResult {
   total: number
   matched: number
@@ -102,8 +102,6 @@ export interface EngineConfig {
   combine?: Record<string, RuleGroup>
   /** Pipelines built in the Filter Pipeline panel (see pipeline.ts). */
   pipelines?: Pipeline[]
-  /** The pipeline whose result is the Results panel's, by name; without one, the last pipeline. */
-  result?: string
   formData?: Record<string, unknown>
 }
 
@@ -116,11 +114,18 @@ export interface PersistedState {
   ruleToggles: Record<string, boolean>
   combine?: Record<string, RuleGroup>
   pipelines?: Pipeline[]
-  resultPipeline?: string
   rawData: Record<string, Entry[]>
   /** What each values source last loaded, by source key. */
   sourceValues?: Record<string, unknown>
   sectionOpen: Record<SectionName, boolean>
 }
 
-export type SectionName = 'config' | 'sources' | 'form' | 'rules' | 'pipelines' | 'results'
+export type SectionName =
+  | 'config'
+  | 'sources'
+  | 'form'
+  | 'rules'
+  | 'filterBlocks'
+  | 'filterGroups'
+  | 'pipelines'
+  | 'results'

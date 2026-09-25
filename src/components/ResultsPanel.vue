@@ -1,17 +1,15 @@
 <script setup lang="ts">
-import { computed, useId } from 'vue'
+import { computed } from 'vue'
 import { describe, finalResult } from '@/pipeline'
 import { useEngineStore } from '@/stores/engine'
 import CollapsibleBox from './CollapsibleBox.vue'
-import CopyJsonButton from './CopyJsonButton.vue'
 
 /**
- * The one answer the setup builds towards: a pipeline's result, the last
- * pipeline's unless another is picked. The Source Filters' per-source
- * counts are inputs to the pipelines, so they stay in that panel.
+ * The one answer the setup builds towards: the result of the last pipeline
+ * switched on. The Data Filters' per-source counts are inputs to the
+ * pipelines, so they stay in that panel.
  */
 const store = useEngineStore()
-const id = useId()
 
 const result = computed(() => (store.resultOf ? finalResult(store.pipelineResults[store.resultOf.name]) : undefined))
 
@@ -21,8 +19,6 @@ const json = computed(() => {
   if (!r?.ok) return ''
   return JSON.stringify(Array.isArray(r.value) && r.value.length > 20 ? r.value.slice(0, 20) : r.value, null, 2)
 })
-
-const lastName = computed(() => store.livePipelines[store.livePipelines.length - 1]?.name ?? '')
 </script>
 
 <template>
@@ -36,24 +32,6 @@ const lastName = computed(() => store.livePipelines[store.livePipelines.length -
         Add a pipeline to build a result from the sources.
       </p>
       <template v-else>
-        <div class="field">
-          <label class="label" :for="id">Result from</label>
-          <div class="field is-grouped is-grouped-multiline">
-            <div class="control">
-              <div class="select">
-                <select :id="id" v-model="store.resultPipeline">
-                  <option value="">The last pipeline switched on ({{ lastName }})</option>
-                  <option v-for="p in store.livePipelines" :key="p.name" :value="p.name">{{ p.name }}</option>
-                </select>
-              </div>
-            </div>
-            <div class="control">
-              <CopyJsonButton :value="() => store.compiledPipeline(store.resultOf!)" :disabled="!store.resultOf"
-                title="Copy the result's pipeline as one JSON Logic expression" />
-            </div>
-          </div>
-        </div>
-
         <template v-if="result?.ok">
           <pre class="payload">{{ json }}</pre>
           <p v-if="Array.isArray(result.value) && result.value.length > 20" class="help">

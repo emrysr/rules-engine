@@ -90,7 +90,7 @@ onMounted(() => store.fetchAll())
           count), each feeding the next, compiled to one JSON Logic expression</s>
         </li>
         <li>
-          <s>Source Filters feed pipelines, and pipelines build one result - a pipeline starts
+          <s>Data Filters feed pipelines, and pipelines build one result - a pipeline starts
           from a filtered source, can check a list on each item ("check a list"), and can
           read the result of the pipeline above it</s>
         </li>

@@ -537,3 +537,17 @@ label.radio > span:last-child {
   justify-content: flex-end;
   padding-top: 0.5rem;
 }
+
+/* A collapsible part of a panel (Filter Blocks, Filter Groups): a titled
+   section, not the indented look other nested <details> get. Bulma's .label
+   makes the summary a block, which drops its marker, so it's a list item. */
+details.sub-section {
+  margin: 1rem 0 0;
+  border-left: 0;
+  padding-left: 0;
+}
+
+.sub-section > summary {
+  display: list-item;
+  margin-bottom: 0.75rem;
+}

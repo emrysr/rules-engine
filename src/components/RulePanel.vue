@@ -4,11 +4,13 @@ import type { Rule } from '@/types'
 import { useEngineStore } from '@/stores/engine'
 import CollapsibleBox from './CollapsibleBox.vue'
 import { keysIn } from '@/combine'
+import { titleCase } from '@/paths'
 import CombineGroup from './CombineGroup.vue'
 import CopyJsonButton from './CopyJsonButton.vue'
 import EditableFieldset from './EditableFieldset.vue'
 import GridAddCell from './GridAddCell.vue'
 import RuleBuilder from './RuleBuilder.vue'
+import SubSection from './SubSection.vue'
 
 const store = useEngineStore()
 
@@ -124,19 +126,19 @@ function usedIn(source: string) {
 </script>
 
 <template>
-  <CollapsibleBox section="rules" title="Source Filters">
+  <CollapsibleBox section="rules" title="Data Filters">
     <template #actions>
       <CopyJsonButton :value="queriesToCopy" :disabled="!store.listSources.length"
         title="Copy each source's filter as one JSON Logic query" />
     </template>
     <div class="mt-3">
       <p class="help block">
-        Source Filters narrow each list source down on its own, before the pipelines use it. Each
+        Data Filters narrow each list source down on its own, before the pipelines use it. Each
         rule is one condition on a source's entries; click a rule's name to rename it. Its logic
         is JSON Logic - entry fields directly, form fields via
         <code>formData.&lt;group&gt;.&lt;label&gt;</code>, values sources via
-        <code>&lt;source&gt;.&lt;field&gt;</code>. <strong>Each source's filter</strong>, below,
-        sets how its rules join up.
+        <code>&lt;source&gt;.&lt;field&gt;</code>. <strong>Filter Blocks</strong> are the rules;
+        <strong>Filter Groups</strong> set how each source's rules join up.
       </p>
 
       <p v-if="error" class="help is-danger mb-3">{{ error }}</p>
@@ -144,81 +146,84 @@ function usedIn(source: string) {
         The saved rules are invalid JSON - import a config to replace them.
       </p>
 
-      <div class="fixed-grid has-1-cols-mobile has-2-cols-tablet has-4-cols-desktop">
-        <div class="grid">
-          <EditableFieldset v-for="(r, i) in store.rulesConfig" :key="r.key" :legend="r.key" noun="rule"
-            :auto-edit="r.key === newRule" :can-move-left="i > 0" :can-move-right="i < lastIndex"
-            @rename="(t) => renameRule(r.key, t)" @delete="removeRule(r.key)"
-            @move="(step) => (error = store.moveRule(r.key, step))">
-            <div class="field is-grouped is-grouped-multiline rule-meta">
-              <div class="control">
-                <label class="checkbox">
-                  <input v-model="store.ruleToggles[r.key]" type="checkbox" />
-                  <span>Enabled</span>
-                </label>
-              </div>
-              <div class="control">
-                <div class="select">
-                  <select :value="r.source" :aria-label="`${r.key} data source`"
-                    @change="error = store.updateRule(r.key, { source: ($event.target as HTMLSelectElement).value })">
-                    <option v-for="s in sourceOptions(r)" :key="s" :value="s">{{ s }}</option>
-                  </select>
+      <SubSection section="filterBlocks" title="Filter Blocks">
+        <div class="fixed-grid has-1-cols-mobile has-2-cols-tablet has-4-cols-desktop">
+          <div class="grid">
+            <EditableFieldset v-for="(r, i) in store.rulesConfig" :key="r.key" :legend="r.key" noun="rule"
+              :auto-edit="r.key === newRule" :can-move-left="i > 0" :can-move-right="i < lastIndex"
+              @rename="(t) => renameRule(r.key, t)" @delete="removeRule(r.key)"
+              @move="(step) => (error = store.moveRule(r.key, step))">
+              <div class="field is-grouped is-grouped-multiline rule-meta">
+                <div class="control">
+                  <label class="checkbox">
+                    <input v-model="store.ruleToggles[r.key]" type="checkbox" />
+                    <span>Enabled</span>
+                  </label>
+                </div>
+                <div class="control">
+                  <div class="select">
+                    <select :value="r.source" :aria-label="`${r.key} data source`"
+                      @change="error = store.updateRule(r.key, { source: ($event.target as HTMLSelectElement).value })">
+                      <option v-for="s in sourceOptions(r)" :key="s" :value="s">{{ titleCase(s) }}</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="control">
+                  <span class="tag" :class="store.ruleMatchInfo[r.key]?.matches ? 'is-success' : 'is-danger'">
+                    {{ store.ruleMatchInfo[r.key]?.matches ?? 0 }} /
+                    {{ store.ruleMatchInfo[r.key]?.total ?? 0 }}
+                  </span>
                 </div>
               </div>
-              <div class="control">
-                <span class="tag" :class="store.ruleMatchInfo[r.key]?.matches ? 'is-success' : 'is-danger'">
-                  {{ store.ruleMatchInfo[r.key]?.matches ?? 0 }} /
-                  {{ store.ruleMatchInfo[r.key]?.total ?? 0 }}
+
+              <div v-if="rawView[r.key]" class="field">
+                <div class="control">
+                  <textarea class="textarea code" :rows="rows(r)" spellcheck="false"
+                    :aria-label="`${r.key} logic JSON`" :value="logicText(r)"
+                    @input="onLogicInput(r, ($event.target as HTMLTextAreaElement).value)"
+                    @blur="onLogicBlur(r)"></textarea>
+                </div>
+                <p v-if="draftErrors[r.key]" class="help is-danger">{{ draftErrors[r.key] }}</p>
+              </div>
+              <RuleBuilder v-else :rule="r" @update="(logic) => setLogic(r, logic)" />
+
+              <template #actions>
+                <button type="button" class="button" :aria-pressed="!!rawView[r.key]"
+                  :title="rawView[r.key] ? 'Back to the rule builder' : 'Edit this rule\'s logic as raw JSON'"
+                  @click="toggleRaw(r.key)">
+                  {{ rawView[r.key] ? 'Use builder' : 'Edit JSON' }}
+                </button>
+              </template>
+            </EditableFieldset>
+            <GridAddCell label="Add rule" @add="addRule" />
+          </div>
+        </div>
+      </SubSection>
+
+      <SubSection section="filterGroups" title="Filter Groups">
+        <p class="help block">
+          How each source's rules join up into its filter: <strong>all of</strong> (AND) or
+          <strong>any of</strong> (OR), with groups for mixing the two, e.g. all of highRating and
+          inStock, or any of bloodTypeMatch and adultUser. A rule switched off above is skipped
+          wherever it appears. The entries a filter keeps are what the pipelines start from.
+          <strong>Copy JSON</strong> copies one JSON Logic query per source, with each rule's logic
+          written in, ready to paste into another app.
+        </p>
+        <div class="fixed-grid has-1-cols-mobile has-2-cols-tablet has-4-cols-desktop">
+          <div class="grid">
+            <fieldset v-for="s in store.listSources" :key="s.key" class="cell form-group">
+              <legend class="label">{{ titleCase(s.key) }}</legend>
+              <p class="mb-3">
+                <span class="tag" :class="store.sourceResults[s.key]?.matched ? 'is-success' : 'is-danger'">
+                  {{ store.sourceResults[s.key]?.matched ?? 0 }} / {{ store.sourceResults[s.key]?.total ?? 0 }} kept
                 </span>
-              </div>
-            </div>
-
-            <div v-if="rawView[r.key]" class="field">
-              <div class="control">
-                <textarea class="textarea code" :rows="rows(r)" spellcheck="false"
-                  :aria-label="`${r.key} logic JSON`" :value="logicText(r)"
-                  @input="onLogicInput(r, ($event.target as HTMLTextAreaElement).value)"
-                  @blur="onLogicBlur(r)"></textarea>
-              </div>
-              <p v-if="draftErrors[r.key]" class="help is-danger">{{ draftErrors[r.key] }}</p>
-            </div>
-            <RuleBuilder v-else :rule="r" @update="(logic) => setLogic(r, logic)" />
-
-            <template #actions>
-              <button type="button" class="button" :aria-pressed="!!rawView[r.key]"
-                :title="rawView[r.key] ? 'Back to the rule builder' : 'Edit this rule\'s logic as raw JSON'"
-                @click="toggleRaw(r.key)">
-                {{ rawView[r.key] ? 'Use builder' : 'Edit JSON' }}
-              </button>
-            </template>
-          </EditableFieldset>
-          <GridAddCell label="Add rule" @add="addRule" />
+              </p>
+              <CombineGroup :group="store.combinationFor(s.key)" :rules="rulesOn(s.key)" :used="usedIn(s.key)"
+                @update="(g) => store.setCombination(s.key, g)" />
+            </fieldset>
+          </div>
         </div>
-      </div>
-
-      <p class="label mt-5">Each source's filter</p>
-      <p class="help block">
-        How each source's rules join up into its filter: <strong>all of</strong> (AND) or
-        <strong>any of</strong> (OR), with groups for mixing the two, e.g. all of highRating and
-        inStock, or any of bloodTypeMatch and adultUser. A rule switched off above is skipped
-        wherever it appears. The entries a filter keeps are what the pipelines start from.
-        <strong>Copy JSON</strong> copies one JSON Logic query per source, with each rule's logic
-        written in, ready to paste into another app.
-      </p>
-      <div class="fixed-grid has-1-cols-mobile has-2-cols-tablet has-4-cols-desktop">
-        <div class="grid">
-          <fieldset v-for="s in store.listSources" :key="s.key" class="cell form-group">
-            <legend class="label">{{ s.key }}</legend>
-            <p class="mb-3">
-              <span class="tag" :class="store.sourceResults[s.key]?.matched ? 'is-success' : 'is-danger'">
-                {{ store.sourceResults[s.key]?.matched ?? 0 }} / {{ store.sourceResults[s.key]?.total ?? 0 }} kept
-              </span>
-            </p>
-            <CombineGroup :group="store.combinationFor(s.key)" :rules="rulesOn(s.key)" :used="usedIn(s.key)"
-              @update="(g) => store.setCombination(s.key, g)" />
-          </fieldset>
-        </div>
-      </div>
+      </SubSection>
     </div>
   </CollapsibleBox>
 </template>

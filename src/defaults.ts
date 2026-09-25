@@ -101,9 +101,9 @@ export const defaultRules: Rule[] = [
 ]
 
 /**
- * The customers who bought a product: the carts Source Filter keeps the
+ * The customers who bought a product: the carts Data Filter keeps the
  * carts holding it (hasProduct), Buyers takes their user ids, then the
- * users (as their Source Filter leaves them) with one of those ids give
+ * users (as their Data Filter leaves them) with one of those ids give
  * their first and last names.
  */
 export const defaultPipelines: Pipeline[] = [
@@ -129,6 +129,8 @@ export const defaultSectionOpen: Record<SectionName, boolean> = {
   sources: true,
   form: true,
   rules: true,
+  filterBlocks: true,
+  filterGroups: true,
   pipelines: true,
   results: false,
 }
@@ -137,6 +139,6 @@ export const defaultSectionOpen: Record<SectionName, boolean> = {
  * Bump when the persisted shape changes so stale caches are ignored. v4: rules
  * read form values by snake_cased legend + label, not by field key. v5:
  * pipelines start from filtered list sources, and the demo gains carts. v6:
- * the demo's carts are filtered by product in their Source Filter.
+ * the demo's carts are filtered by product in their Data Filter.
  */
 export const STORAGE_KEY = 'cdre-config-v6'

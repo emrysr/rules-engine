@@ -48,16 +48,20 @@ function addGroup() {
   newGroup.value = store.addGroup()
 }
 
-// An empty group just goes; one with fields asks first, naming the rules that read them.
+// Always ask first, naming the fields that go with it and the rules and pipelines that read them.
 function deleteGroup(name: string, fields: SchemaField[]) {
-  if (fields.length) {
-    const rules = store.rulesReading(fields)
-    const count = fields.length === 1 ? '1 field' : `${fields.length} fields`
-    const reading = rules.length
-      ? `\n\nThese rules read them and will no longer find their values: ${rules.join(', ')}.`
-      : ''
-    if (!confirm(`Delete "${name}" and its ${count}?${reading}`)) return
-  }
+  const count = fields.length === 1 ? '1 field' : `${fields.length} fields`
+  const readers = (
+    [
+      ['rules', store.rulesReading(fields)],
+      ['pipelines', store.pipelinesReading(fields)],
+    ] as const
+  )
+    .filter(([, names]) => names.length)
+    .map(([kind, names]) => `\n\nThese ${kind} read them and will no longer find their values: ${names.join(', ')}.`)
+    .join('')
+  const what = fields.length ? `"${name}" and its ${count}` : `the empty group "${name}"`
+  if (!confirm(`Delete ${what}?${readers}`)) return
   error.value = store.removeGroup(name)
 }
 </script>
@@ -80,7 +84,7 @@ function deleteGroup(name: string, fields: SchemaField[]) {
         existing FormKit project and render with
         <code>&lt;FormKit type="form"&gt;&lt;FormKitSchema :schema="schema" /&gt;&lt;/FormKit&gt;</code>.
         Each fieldset becomes a FormKit group, so the form's value has the same
-        <code>formData.&lt;group&gt;.&lt;label&gt;</code> shape the copied Source Filters and pipelines read - pass it
+        <code>formData.&lt;group&gt;.&lt;label&gt;</code> shape the copied Data Filters and pipelines read - pass it
         to them as <code>formData</code>.
       </p>
 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import type { DataSource } from '@/types'
+import { titleCase } from '@/paths'
 import { isPasted, useEngineStore } from '@/stores/engine'
 import CollapsibleBox from './CollapsibleBox.vue'
 import EditableFieldset from './EditableFieldset.vue'
@@ -91,7 +92,7 @@ function removeSource(key: string) {
     <div class="mt-3">
       <p class="help block">
         The data the rules work with, fetched from a URL or pasted in as JSON. A
-        <strong>list</strong> source is narrowed by its Source Filter, and pipelines start from
+        <strong>list</strong> source is narrowed by its Data Filter, and pipelines start from
         what's left; its name is also the response field its list is read from (falling back to
         the first list).
         A <strong>values</strong> source is an object of values every rule can read, e.g.
@@ -114,7 +115,7 @@ function removeSource(key: string) {
 
       <div class="fixed-grid has-1-cols-mobile has-2-cols-tablet has-4-cols-desktop">
         <div class="grid">
-          <EditableFieldset v-for="(s, i) in store.dataSources" :key="s.key" :legend="s.key" noun="source"
+          <EditableFieldset v-for="(s, i) in store.dataSources" :key="s.key" :legend="s.key" :display="titleCase(s.key)" noun="source"
             :auto-edit="s.key === newSource" :can-move-left="i > 0" :can-move-right="i < lastIndex"
             @rename="(t) => (error = store.renameSource(s.key, t))" @delete="removeSource(s.key)"
             @move="(step) => (error = store.moveSource(s.key, step))">

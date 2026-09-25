@@ -146,8 +146,6 @@ export const useEngineStore = defineStore('engine', () => {
   const combine = ref<Record<string, RuleGroup>>(validCombine(cached?.combine))
   /** Pipelines: stacks of blocks that each compile to one JSON Logic expression. */
   const pipelines = ref<Pipeline[]>(cached ? validPipelines(cached.pipelines) : defaultPipelines)
-  /** The pipeline the Results panel shows, by name; '' (or a name that's gone) means the last one. */
-  const resultPipeline = ref(cached?.resultPipeline ?? '')
   // Results always starts collapsed: it sticks to the foot of the screen,
   // where open it would cover what's being edited.
   const sectionOpen = reactive<Record<SectionName, boolean>>({
@@ -317,7 +315,7 @@ export const useEngineStore = defineStore('engine', () => {
 
   /**
    * Everything a pipeline can read, by name: each list source's entries
-   * after its Source Filter, each values source's values, and the form
+   * after its Data Filter, each values source's values, and the form
    * values under `formData`.
    */
   const pipelineScope = computed<Record<string, unknown>>(() => ({
@@ -334,7 +332,7 @@ export const useEngineStore = defineStore('engine', () => {
     }),
   )
 
-  /** The pipeline as one JSON Logic expression, Source Filters and the pipelines it reads written in. */
+  /** The pipeline as one JSON Logic expression, Data Filters and the pipelines it reads written in. */
   function compiledPipeline(p: Pipeline): unknown {
     return compilePipeline(p, {
       sourceFilter: (key) => compiledQueries.value[key],
@@ -345,12 +343,8 @@ export const useEngineStore = defineStore('engine', () => {
   /** The pipelines switched on. The first is always on: the others are built on it. */
   const livePipelines = computed(() => pipelines.value.filter((p, i) => i === 0 || !p.off))
 
-  /** The pipeline whose result is the Results panel's: the chosen one if it's on, else the last one on. */
-  const resultOf = computed<Pipeline | undefined>(
-    () =>
-      livePipelines.value.find((p) => p.name === resultPipeline.value) ??
-      livePipelines.value[livePipelines.value.length - 1],
-  )
+  /** The pipeline whose result is the Results panel's: the last one switched on. */
+  const resultOf = computed<Pipeline | undefined>(() => livePipelines.value[livePipelines.value.length - 1])
 
   /** A source's rule combination: the stored one, or all its rules ANDed. */
   function combinationFor(source: string): RuleGroup {
@@ -432,7 +426,6 @@ export const useEngineStore = defineStore('engine', () => {
         rules: rulesConfig.value,
         combine: Object.fromEntries(listSources.value.map((s) => [s.key, combinationFor(s.key)])),
         pipelines: pipelines.value,
-        ...(resultPipeline.value && resultOf.value?.name === resultPipeline.value ? { result: resultPipeline.value } : {}),
         formData: { ...formData.value },
       },
     }
@@ -457,7 +450,6 @@ export const useEngineStore = defineStore('engine', () => {
     formData.value = { ...config.formData }
     combine.value = validCombine(config.combine)
     pipelines.value = validPipelines(config.pipelines)
-    resultPipeline.value = config.result ?? ''
     for (const key in ruleToggles) delete ruleToggles[key]
     emptyGroups.value = []
     seedFormData(config.schema)
@@ -659,12 +651,20 @@ export const useEngineStore = defineStore('engine', () => {
     return ''
   }
 
+  /** Whether JSON Logic reads any of these form fields. */
+  function readsFields(logic: unknown, fields: SchemaField[]): boolean {
+    const paths = fields.map(rulePath)
+    return varPaths(logic).some((v) => paths.some((p) => v === p || v.startsWith(p + '.')))
+  }
+
   /** Keys of the rules that read any of these form fields. */
   function rulesReading(fields: SchemaField[]): string[] {
-    const paths = fields.map(rulePath)
-    return rulesConfig.value
-      .filter((r) => varPaths(r.logic).some((v) => paths.some((p) => v === p || v.startsWith(p + '.'))))
-      .map((r) => r.key)
+    return rulesConfig.value.filter((r) => readsFields(r.logic, fields)).map((r) => r.key)
+  }
+
+  /** Names of the pipelines whose conditions read any of these form fields. */
+  function pipelinesReading(fields: SchemaField[]): string[] {
+    return pipelines.value.filter((p) => readsFields(p.blocks, fields)).map((p) => p.name)
   }
 
   /** Swap a group with its neighbour: `step` -1 moves it earlier, 1 later. */
@@ -881,13 +881,12 @@ export const useEngineStore = defineStore('engine', () => {
     return name
   }
 
-  /** Rename a pipeline; pipelines reading its result, and the Results panel's pick, follow. */
+  /** Rename a pipeline; pipelines reading its result follow. */
   function renamePipeline(from: string, to: string): string {
     if (findPipeline(to)) return `There's already a pipeline called "${to}".`
     // Other pipelines read its result as pipelines.<name>, where a dot would split the name.
     if (to.includes('.')) return "A pipeline's name can't contain a dot."
     pipelines.value = pipelines.value.map((p) => renamePipelineRefs(p.name === from ? { ...p, name: to } : p, from, to))
-    if (resultPipeline.value === from) resultPipeline.value = to
     return ''
   }
 
@@ -918,7 +917,6 @@ export const useEngineStore = defineStore('engine', () => {
       ruleToggles: { ...ruleToggles },
       combine: combine.value,
       pipelines: pipelines.value,
-      resultPipeline: resultPipeline.value,
       rawData: { ...rawData },
       sourceValues: { ...sourceValues },
       sectionOpen: { ...sectionOpen },
@@ -926,7 +924,7 @@ export const useEngineStore = defineStore('engine', () => {
   }
 
   watch(
-    [sourcesText, schemaText, rulesText, formData, ruleToggles, combine, pipelines, resultPipeline, sectionOpen],
+    [sourcesText, schemaText, rulesText, formData, ruleToggles, combine, pipelines, sectionOpen],
     persist,
     { deep: true },
   )
@@ -957,7 +955,6 @@ export const useEngineStore = defineStore('engine', () => {
     pipelines,
     pipelineResults,
     compiledPipeline,
-    resultPipeline,
     resultOf,
     formFieldOptions,
     valuePaths,
@@ -988,6 +985,7 @@ export const useEngineStore = defineStore('engine', () => {
     renameGroup,
     removeGroup,
     rulesReading,
+    pipelinesReading,
     moveGroup,
     addSource,
     updateSource,

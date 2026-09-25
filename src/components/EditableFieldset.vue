@@ -9,6 +9,8 @@ import InlineEdit from './InlineEdit.vue'
  */
 const props = defineProps<{
   legend: string
+  /** What the legend shows, when it differs from the name that's edited. */
+  display?: string
   /** What it is, for button titles: "group", "rule". */
   noun: string
   canMoveLeft: boolean
@@ -27,7 +29,7 @@ const emit = defineEmits<{
 <template>
   <fieldset class="cell form-group">
     <legend class="label label-row">
-      <InlineEdit :text="props.legend" :auto-edit="autoEdit" @save="(t) => emit('rename', t)" />
+      <InlineEdit :text="props.legend" :display="display" :auto-edit="autoEdit" @save="(t) => emit('rename', t)" />
       <button type="button" class="delete" :title="`Delete ${noun}`" :aria-label="`Delete ${legend}`"
         @click="emit('delete')"></button>
     </legend>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { entryPaths } from '@/comparison'
+import { titleCase } from '@/paths'
 import { BLOCK_LABELS, describe, mapFields } from '@/pipeline'
 import type { Block, StepResult } from '@/pipeline'
 import { useEngineStore } from '@/stores/engine'
@@ -107,11 +108,11 @@ function value(e: Event): string {
         <div class="select is-fullwidth">
           <select :value="block.source" :aria-label="`${label}: data source`" @change="patch({ source: value($event) })">
             <option value="" disabled>Choose a source</option>
-            <option v-for="s in sourceOptions" :key="s" :value="s">{{ s }}</option>
+            <option v-for="s in sourceOptions" :key="s" :value="s">{{ titleCase(s) }}</option>
           </select>
         </div>
       </div>
-      <p class="help">As its Source Filter leaves it.</p>
+      <p class="help">As its Data Filter leaves it.</p>
     </div>
 
     <ConditionEditor v-else-if="block.type === 'filter'" :condition="block.condition" :items="items"

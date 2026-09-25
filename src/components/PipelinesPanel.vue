@@ -92,7 +92,7 @@ function removePipeline(p: Pipeline) {
       <p class="help block">
         A pipeline is a stack of blocks: each takes the output of the one above, and the last
         one's output is the pipeline's result. Start from a source - a list source comes through
-        its Source Filter - then filter, map, test or count. Inside a block, conditions read each
+        its Data Filter - then filter, map, test or count. Inside a block, conditions read each
         item's own fields as well as the sources and form values, and can check a list on the
         item with <strong>Check a list</strong>. A pipeline can also read the result of the
         pipeline directly above it (as <strong>Pipeline result</strong>, e.g. <em>id is one of
@@ -101,7 +101,7 @@ function removePipeline(p: Pipeline) {
         it out of the result while you test (the first is always on), and click its title bar to
         fold it away.
         <strong>Copy JSON</strong> gives the whole pipeline as one JSON Logic expression, with the
-        Source Filters and the pipeline above written in - to run it, your app needs the sources
+        Data Filters and the pipeline above written in - to run it, your app needs the sources
         and form values in scope, including inside <code>filter</code>, <code>map</code> and
         <code>some</code>.
       </p>

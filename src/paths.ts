@@ -13,6 +13,19 @@ export const FORM_NAMESPACE = 'formData'
 /** Where a pipeline's conditions read other pipelines' results: `pipelines.<name>`. */
 export const PIPELINE_NAMESPACE = 'pipelines'
 
+/**
+ * A key as a title, for showing a source's name: "products" → "Products",
+ * "newSource2" → "New Source 2", "order_items" → "Order Items". Display only;
+ * the key itself is what rules read.
+ */
+export function titleCase(key: string): string {
+  return key
+    .replace(/([a-z])([A-Z0-9])/g, '$1 $2')
+    .replace(/[_-]+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
 /** "Minimum product rating" → "minimum_product_rating". */
 export function snakeCase(text: string): string {
   return text

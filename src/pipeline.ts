@@ -6,14 +6,14 @@ import { PIPELINE_NAMESPACE, renameVar, varPaths } from '@/paths'
  * that compiles to one nested JSON Logic expression. The first block is
  * always a source; the rest map to JSON Logic's list operations:
  *
- *   source "carts"                           → {"filter": [{"var": "carts"}, <carts Source Filter>]}
+ *   source "carts"                           → {"filter": [{"var": "carts"}, <carts Data Filter>]}
  *   filter (all of …)                        → {"filter": [<prev>, <condition>]}
  *   map category.id                          → {"map": [<prev>, {"var": "category.id"}]}
  *   map firstName, lastName                  → {"map": [<prev>, [{"var": "firstName"}, {"var": "lastName"}]]}
  *   test any / every / no item               → {"some" | "all" | "none": [<prev>, <condition>]}
  *   count                                    → {"reduce": [<prev>, {"+": [acc, 1]}, 0]}
  *
- * A pipeline starts from a list source, as its Source Filter leaves it. A
+ * A pipeline starts from a list source, as its Data Filter leaves it. A
  * values source isn't a starting point, but conditions can read it. A condition can read the result of the pipeline directly
  * above as `{"var": "pipelines.<name>"}`, which Copy JSON replaces with that
  * pipeline's own expression, and can ask whether an item's list field has
@@ -179,7 +179,7 @@ function inlineRefs(logic: unknown, expr: (name: string) => unknown): unknown {
 
 /** What compiling needs from the rest of the setup. */
 export interface CompileContext {
-  /** A list source's Source Filter as JSON Logic. */
+  /** A list source's Data Filter as JSON Logic. */
   sourceFilter(key: string): unknown
   /** Every pipeline in order, to inline the one above when it's read. */
   pipelines: Pipeline[]
@@ -187,7 +187,7 @@ export interface CompileContext {
 
 /**
  * The whole pipeline as one JSON Logic expression, ready to paste into
- * another app: its Source Filters and the pipeline above it (if read)
+ * another app: its Data Filters and the pipeline above it (if read)
  * written in. A read of any other pipeline, which can't run, is left as a var.
  */
 export function compilePipeline(p: Pipeline, ctx: CompileContext): unknown {
@@ -229,7 +229,7 @@ export type StepResult = { ok: true; value: unknown } | { ok: false; error: stri
 
 /** What running needs from the rest of the setup. */
 export interface RunContext {
-  /** Every input by name: list sources after their Source Filters, values sources, form values. */
+  /** Every input by name: list sources after their Data Filters, values sources, form values. */
   scope: Record<string, unknown>
   /** The list sources' keys: what a pipeline can start from. */
   listSources: string[]
@@ -261,7 +261,7 @@ function itemScope(scope: Record<string, unknown>, item: unknown): unknown {
  * Whether one row passes for the item. "Check a list" rows are run here
  * rather than by json-logic-js, so the inputs (form values, sources) stay in
  * scope for the list's items too. As JSON Logic, "every" of an empty list
- * is false. Used by Source Filter rules as well as pipeline conditions.
+ * is false. Used by Data Filter rules as well as pipeline conditions.
  */
 export function rowPasses(row: unknown, scope: Record<string, unknown>, item: unknown): boolean {
   const has = parseHasItem(row)
