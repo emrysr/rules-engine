@@ -92,7 +92,8 @@ function removePipeline(p: Pipeline) {
       <p class="help block">
         A pipeline is a stack of blocks: each takes the output of the one above, and the last
         one's output is the pipeline's result. Start from a source - a list source comes through
-        its Data Filter - then filter, map, test or count. Inside a block, conditions read each
+        its Data Filter, and a later pipeline can start from the result of the one above - then
+        filter, map, test or count. Inside a block, conditions read each
         item's own fields as well as the sources and form values, and can check a list on the
         item with <strong>Check a list</strong>. A pipeline can also read the result of the
         pipeline directly above it (as <strong>Pipeline result</strong>, e.g. <em>id is one of
@@ -133,6 +134,7 @@ function removePipeline(p: Pipeline) {
               <!-- The source first, then its steps indented beneath it on a guide line. -->
               <template v-for="b in p.blocks.slice(0, 1)" :key="0">
                 <PipelineBlock :block="b" :input="undefined" :result="results(p)[0]" :pipelines="readable(pi)"
+                  :above="store.pipelines[pi - 1]?.name"
                   :label="`${p.name} source`" :can-move-up="false" :can-move-down="false"
                   @update="(nb) => setBlocks(p, [nb, ...p.blocks.slice(1)])" />
               </template>

@@ -7,6 +7,7 @@ import { PIPELINE_NAMESPACE, renameVar, varPaths } from '@/paths'
  * always a source; the rest map to JSON Logic's list operations:
  *
  *   source "carts"                           → {"filter": [{"var": "carts"}, <carts Data Filter>]}
+ *   source: the pipeline above               → <that pipeline's expression>
  *   filter (all of …)                        → {"filter": [<prev>, <condition>]}
  *   map category.id                          → {"map": [<prev>, {"var": "category.id"}]}
  *   map firstName, lastName                  → {"map": [<prev>, [{"var": "firstName"}, {"var": "lastName"}]]}
@@ -33,7 +34,8 @@ export interface Condition {
 }
 
 export type Block =
-  | { type: 'source'; source: string }
+  /** `above`: carry on from the result of the pipeline above, instead of a data source. */
+  | { type: 'source'; source: string; above?: boolean }
   | { type: 'filter'; condition: Condition }
   /** `path`: the field each item becomes, or several separated by commas for a list per item. */
   | { type: 'map'; path: string }
@@ -200,6 +202,10 @@ export function compilePipeline(p: Pipeline, ctx: CompileContext): unknown {
   for (const b of p.blocks) {
     switch (b.type) {
       case 'source': {
+        if (b.above) {
+          out = prev ? compilePipeline(prev, ctx) : { var: PIPELINE_PREFIX }
+          break
+        }
         out = { var: b.source }
         const filter = ctx.sourceFilter(b.source)
         if (filter !== undefined && filter !== true) out = { filter: [out, filter] }
@@ -235,6 +241,8 @@ export interface RunContext {
   listSources: string[]
   /** The results this pipeline can read, by pipeline name: the one above's, once it's run. */
   results: Record<string, unknown>
+  /** The pipeline above's name, for a source carrying on from it; none for the first. */
+  above?: string
   /** Why a pipeline's result can't be read, by name, for blocks reading it. */
   problems: Record<string, string>
 }
@@ -307,6 +315,12 @@ export function runPipeline(p: Pipeline, ctx: RunContext): StepResult[] {
       checkRefs(b, ctx)
       switch (b.type) {
         case 'source': {
+          if (b.above) {
+            if (!ctx.above) throw new Error('The first pipeline starts from a data source.')
+            if (!(ctx.above in ctx.results)) throw new Error(ctx.problems[ctx.above] ?? `"${ctx.above}" has no result yet.`)
+            value = ctx.results[ctx.above]
+            break
+          }
           if (!b.source) throw new Error('Pick a source.')
           if (!ctx.listSources.includes(b.source)) {
             throw new Error(`"${b.source}" isn't a list source - a pipeline starts from a filtered list.`)
@@ -366,7 +380,7 @@ export function runPipelines(
       if (last?.ok) results[prev.name] = last.value
       else problems[prev.name] = `"${prev.name}" has no result yet.`
     }
-    out[p.name] = runPipeline(p, { ...ctx, results, problems })
+    out[p.name] = runPipeline(p, { ...ctx, results, problems, above: prev?.name })
   })
   return out
 }

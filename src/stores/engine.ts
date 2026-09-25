@@ -872,12 +872,17 @@ export const useEngineStore = defineStore('engine', () => {
     return pipelines.value.find((p) => p.name === name)
   }
 
-  /** Add a pipeline starting from the first source, with a unique placeholder name, returned for editing. */
+  /**
+   * Add a pipeline with a unique placeholder name, returned for editing. It
+   * carries on from the pipeline above; the first starts from the first source.
+   */
   function addPipeline(): string {
     let name = 'New pipeline'
     for (let n = 2; findPipeline(name); n++) name = `New pipeline ${n}`
-    const first = listSources.value[0]?.key ?? ''
-    pipelines.value = [...pipelines.value, { name, blocks: [{ type: 'source', source: first }] }]
+    const source: Block = pipelines.value.length
+      ? { type: 'source', source: '', above: true }
+      : { type: 'source', source: listSources.value[0]?.key ?? '' }
+    pipelines.value = [...pipelines.value, { name, blocks: [source] }]
     return name
   }
 

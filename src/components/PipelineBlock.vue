@@ -17,6 +17,8 @@ const props = defineProps<{
   result: StepResult | undefined
   /** Pipelines whose result this block's conditions can read, by name. */
   pipelines: string[]
+  /** The name of the pipeline above, which a source block can carry on from; none for the first. */
+  above?: string
   label: string
   canMoveUp: boolean
   canMoveDown: boolean
@@ -74,6 +76,13 @@ const outputJson = computed(() => {
   return JSON.stringify(Array.isArray(v) && v.length > 5 ? v.slice(0, 5) : v, null, 2)
 })
 
+/** The source picker's value for "Result of the pipeline above". */
+const ABOVE = '@above'
+
+function setSource(v: string) {
+  emit('update', v === ABOVE ? { type: 'source', source: '', above: true } : { type: 'source', source: v })
+}
+
 function patch(changes: Record<string, unknown>) {
   emit('update', { ...props.block, ...changes } as Block)
 }
@@ -106,13 +115,15 @@ function value(e: Event): string {
     <div v-if="block.type === 'source'" class="field">
       <div class="control">
         <div class="select is-fullwidth">
-          <select :value="block.source" :aria-label="`${label}: data source`" @change="patch({ source: value($event) })">
+          <select :value="block.above ? ABOVE : block.source" :aria-label="`${label}: data source`"
+            @change="setSource(value($event))">
             <option value="" disabled>Choose a source</option>
+            <option v-if="above || block.above" :value="ABOVE">Result of {{ above ?? 'the pipeline above' }}</option>
             <option v-for="s in sourceOptions" :key="s" :value="s">{{ titleCase(s) }}</option>
           </select>
         </div>
       </div>
-      <p class="help">As its Data Filter leaves it.</p>
+      <p class="help">{{ block.above ? 'Carries on from the pipeline above.' : 'As its Data Filter leaves it.' }}</p>
     </div>
 
     <ConditionEditor v-else-if="block.type === 'filter'" :condition="block.condition" :items="items"
