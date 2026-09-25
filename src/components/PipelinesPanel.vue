@@ -1,0 +1,133 @@
+<script setup lang="ts">
+import { ref } from 'vue'
+import { BLOCK_LABELS, compilePipeline, describe, newBlock } from '@/pipeline'
+import type { Block, BlockType, Pipeline, StepResult } from '@/pipeline'
+import { useEngineStore } from '@/stores/engine'
+import CollapsibleBox from './CollapsibleBox.vue'
+import CopyJsonButton from './CopyJsonButton.vue'
+import EditableFieldset from './EditableFieldset.vue'
+import GridAddCell from './GridAddCell.vue'
+import PipelineBlock from './PipelineBlock.vue'
+
+const store = useEngineStore()
+
+const error = ref('')
+/** The pipeline just created, so its legend opens straight into editing. */
+const newPipeline = ref('')
+
+const ADDABLE: Exclude<BlockType, 'source'>[] = ['filter', 'map', 'test', 'count']
+
+function results(p: Pipeline): StepResult[] {
+  return store.pipelineResults[p.name] ?? []
+}
+
+/** What block i receives: the output of the block before it. */
+function inputOf(p: Pipeline, i: number): unknown {
+  const prev = results(p)[i - 1]
+  return prev?.ok ? prev.value : undefined
+}
+
+function final(p: Pipeline): StepResult | undefined {
+  return results(p)[p.blocks.length - 1]
+}
+
+/** The result, shown whole when it's short ([1, 3], true, 12), else summarised. */
+function finalText(p: Pipeline): string {
+  const r = final(p)
+  if (!r?.ok) return ''
+  const json = JSON.stringify(r.value)
+  return json.length <= 40 ? json : describe(r.value)
+}
+
+function setBlocks(p: Pipeline, blocks: Block[]) {
+  store.setPipelineBlocks(p.name, blocks)
+}
+
+function addBlock(p: Pipeline, e: Event) {
+  const select = e.target as HTMLSelectElement
+  if (select.value) setBlocks(p, [...p.blocks, newBlock(select.value as Exclude<BlockType, 'source'>)])
+  select.value = ''
+}
+
+function moveBlock(p: Pipeline, i: number, step: -1 | 1) {
+  const blocks = [...p.blocks]
+  ;[blocks[i], blocks[i + step]] = [blocks[i + step], blocks[i]]
+  setBlocks(p, blocks)
+}
+
+function addPipeline() {
+  error.value = ''
+  newPipeline.value = store.addPipeline()
+}
+
+function removePipeline(p: Pipeline) {
+  if (p.blocks.length > 1 && !confirm(`Delete the "${p.name}" pipeline?`)) return
+  store.removePipeline(p.name)
+}
+</script>
+
+<template>
+  <CollapsibleBox section="pipelines" title="Pipelines">
+    <div class="mt-3">
+      <p class="help block">
+        A pipeline is a stack of blocks: each takes the output of the one above, and the last
+        one's output is the result. Start from a source, then filter, map, test or count. Inside
+        a block, conditions read each item's own fields as well as the sources and form values.
+        <strong>Copy JSON</strong> gives the whole pipeline as one JSON Logic expression - to run
+        it, your app needs the sources and form values in scope, including inside
+        <code>filter</code> and <code>map</code>.
+      </p>
+
+      <p v-if="error" class="help is-danger mb-3">{{ error }}</p>
+
+      <div class="fixed-grid has-1-cols">
+        <div class="grid">
+          <EditableFieldset v-for="(p, pi) in store.pipelines" :key="p.name" :legend="p.name" noun="pipeline"
+            vertical :auto-edit="p.name === newPipeline" :can-move-left="pi > 0"
+            :can-move-right="pi < store.pipelines.length - 1"
+            @rename="(t) => (error = store.renamePipeline(p.name, t))" @delete="removePipeline(p)"
+            @move="(step) => store.movePipeline(p.name, step)">
+            <div class="pipeline-stack mt-2">
+              <template v-for="(b, i) in p.blocks" :key="i">
+                <div v-if="i > 0" class="pipeline-arrow" aria-hidden="true">
+                  <svg class="move-icon" viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6" /></svg>
+                </div>
+                <PipelineBlock :block="b" :input="inputOf(p, i)" :result="results(p)[i]"
+                  :label="`${p.name} ${BLOCK_LABELS[b.type].toLowerCase()} ${i + 1}`"
+                  :can-move-up="i > 1" :can-move-down="i > 0 && i < p.blocks.length - 1"
+                  @update="(nb) => setBlocks(p, p.blocks.map((x, j) => (j === i ? nb : x)))"
+                  @remove="setBlocks(p, p.blocks.filter((_, j) => j !== i))"
+                  @move="(step) => moveBlock(p, i, step)" />
+              </template>
+
+              <div class="pipeline-arrow" aria-hidden="true">
+                <svg class="move-icon" viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6" /></svg>
+              </div>
+              <div class="field">
+                <div class="control">
+                  <div class="select is-fullwidth">
+                    <select :aria-label="`${p.name}: add a block`" @change="addBlock(p, $event)">
+                      <option value="">Add a block…</option>
+                      <option v-for="t in ADDABLE" :key="t" :value="t">{{ BLOCK_LABELS[t] }}</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <p class="pipeline-result">
+                <strong>Result:</strong>
+                <span v-if="final(p)?.ok" class="tag is-success ml-2">{{ finalText(p) }}</span>
+                <span v-else class="tag is-danger ml-2">None yet</span>
+              </p>
+            </div>
+
+            <template #actions>
+              <CopyJsonButton :value="() => compilePipeline(p)" title="Copy the pipeline as one JSON Logic expression" />
+            </template>
+          </EditableFieldset>
+          <GridAddCell label="Add pipeline" @add="addPipeline" />
+        </div>
+      </div>
+    </div>
+  </CollapsibleBox>
+</template>

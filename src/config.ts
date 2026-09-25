@@ -1,5 +1,6 @@
 import type { EngineConfig } from '@/types'
 import { isRuleGroup } from '@/combine'
+import { isPipeline } from '@/pipeline'
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)
@@ -63,6 +64,14 @@ export function parseConfig(text: string): { config: EngineConfig } | { error: s
     const bad = Object.entries(value.combine).find(([, g]) => !isRuleGroup(g))
     if (bad) {
       return { error: `combine.${bad[0]} must be { "op": "and" | "or", "items": [rule keys or groups] }.` }
+    }
+  }
+
+  if (value.pipelines !== undefined) {
+    if (!Array.isArray(value.pipelines)) return { error: '"pipelines" must be an array when present.' }
+    const bad = value.pipelines.findIndex((p) => !isPipeline(p))
+    if (bad !== -1) {
+      return { error: `pipelines[${bad}] must be { "name": "...", "blocks": [a source block, ...] }.` }
     }
   }
 

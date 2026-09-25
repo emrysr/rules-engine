@@ -10,8 +10,10 @@ import type { Operand, OperandKind } from '@/comparison'
  */
 const props = defineProps<{
   operand: Operand
-  /** Field paths seen in the rule's source data. */
+  /** Field paths seen in the data being tested. */
   entryPaths: string[]
+  /** What those fields are called here: "Entry field", "Item field". */
+  entryLabel: string
   /** Form fields as rules read them: full `formData.…` path and a readable name. */
   formFields: { path: string; name: string }[]
   /** Values sources' value paths, e.g. teetime.target_day. */
@@ -25,7 +27,7 @@ const listId = useId()
 /** Source value is only offered when there's a values source to read (or the side already reads one). */
 const kinds = computed(() => {
   const all: { kind: OperandKind; label: string }[] = [
-    { kind: 'entry', label: 'Entry field' },
+    { kind: 'entry', label: props.entryLabel },
     { kind: 'form', label: 'Form field' },
     { kind: 'source', label: 'Source value' },
     { kind: 'value', label: 'Value' },
@@ -74,7 +76,7 @@ function inputValue(e: Event): string {
 
     <div v-if="operand.kind === 'entry'" class="control is-expanded">
       <input class="input" type="text" :list="listId" :value="operand.path" placeholder="e.g. rating"
-        :aria-label="`${label}: entry field`"
+        :aria-label="`${label}: ${entryLabel.toLowerCase()}`"
         @change="emit('update', { kind: 'entry', path: inputValue($event).trim() })" />
       <datalist :id="listId">
         <option v-for="p in entryPaths" :key="p" :value="p" />

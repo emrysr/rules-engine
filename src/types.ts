@@ -1,4 +1,5 @@
 import type { RulesLogic } from 'json-logic-js'
+import type { Pipeline } from './pipeline'
 
 /**
  * A list endpoint. `key` is both the namespace rules target via `source` and
@@ -97,6 +98,8 @@ export interface EngineConfig {
   rules: Rule[]
   /** How each source's rules combine, by source key; a source without one ANDs all its rules. */
   combine?: Record<string, RuleGroup>
+  /** Pipelines built in the Pipelines panel (see pipeline.ts). */
+  pipelines?: Pipeline[]
   formData?: Record<string, unknown>
 }
 
@@ -108,10 +111,11 @@ export interface PersistedState {
   formData: Record<string, unknown>
   ruleToggles: Record<string, boolean>
   combine?: Record<string, RuleGroup>
+  pipelines?: Pipeline[]
   rawData: Record<string, Entry[]>
   /** What each values source last loaded, by source key. */
   sourceValues?: Record<string, unknown>
   sectionOpen: Record<SectionName, boolean>
 }
 
-export type SectionName = 'config' | 'sources' | 'form' | 'rules' | 'results'
+export type SectionName = 'config' | 'sources' | 'form' | 'rules' | 'pipelines' | 'results'

@@ -17,6 +17,7 @@ are all JSON, editable at runtime:
 | **Data sources** | `{ key, url?, data?, listPath?, use? }` | Fetched from `url`, or pasted in as `data` (any JSON). A list source (the default) is filtered by rules: `key` is the namespace rules target, and the response field the array is auto-extracted from. `use: "values"` makes it an object of values in every rule's scope under its key, read as `{"var": "teetime.target_day"}` - the inputs a real app would supply. `listPath` is a dotted path to the list (or values object) when the data wraps it (`data`, `response.items`); without it a list is found automatically. Each source is a fieldset in the Data Sources panel - rename, move, add or delete it, set its URL, fetch it on its own and preview what came back. |
 | **Form schema** | `{ key, label, type, options?, default?, group?, classes? }` | Rendered as real `<FormKit>` inputs in the Options Form panel; `group` is the fieldset it sits in. **Copy FormKit Schema** in that panel's title bar copies the form as a FormKit schema to paste into another FormKit project (`<FormKitSchema :schema="schema" />` inside a `<FormKit type="form">`). Each fieldset becomes a FormKit group, so the form's value is shaped the way the copied rules read `formData`. Fieldsets show in the order their groups first appear; the arrows under each one move it. |
 | **Rules** | `{ key, source, enabled, logic }` | `logic` is JSON Logic. `source` says which data source it filters. Each rule is a fieldset in the JSON Rules panel - rename, move, add or delete it and edit its logic there, with a query builder or as raw JSON; the rules JSON is rebuilt on every change. |
+| **Pipelines** | `[{ name, blocks: [source, ...filter / map / test / count] }]` | Built in the Pipelines panel: a stack of blocks, each taking the previous one's output, e.g. source `fairway` at `ruleset.rules` → filter (all of …) → map `category.id` → `[1, 3]`. Each block shows its output. **Copy JSON** gives the pipeline as one JSON Logic expression (`map(filter(...))`). Conditions inside a block read the item's fields and also the sources and form values, so the host app has to supply those inside `filter` / `map` - standard engines only show the item there. |
 | **Combine** | `{ [source]: { op: "and" \| "or", items: [rule keys or groups] } }` | How each source's rules join into its result query, edited in the **Query Builder** in the JSON Rules panel. A source without one ANDs all its rules; a rule switched off is skipped wherever it appears. **Copy JSON** in the panel's title bar copies one finished JSON Logic query per source, with the rules' logic written in, to paste into another app. |
 
 The point is the coupling between the last two: a rule reads an entry's fields
@@ -114,8 +115,10 @@ src/
       when adding it
 - [x] **Rule combiner** - build each source's result query from the rules with AND / OR
       groups, e.g. (highRating and inStock), or (bloodTypeMatch or adultUser)
-- [ ] **List-aware rules** - some / all / none over list fields (like a product's tags),
-      and whether map / filter / reduce belong in the builder
+- [x] **Pipelines prototype** - a mobile-first stack of blocks (source, filter, map,
+      test, count), each feeding the next, compiled to one JSON Logic expression
+- [ ] **Pipelines, next** - more blocks (sum / min / max, map to an object), one
+      pipeline's result as another's input, and whether pipelines replace JSON Rules
 - [ ] **A Bulma dialog** in place of the browser's confirm prompts
 
 Known rough edge: the full Bulma stylesheet is ~710 KB uncompressed (72 KB gzipped)

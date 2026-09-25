@@ -216,9 +216,22 @@ label.radio > span:last-child {
   margin-bottom: 0.75rem;
 }
 
-/* The kind picker keeps its width; the field or value beside it takes the rest. */
+/* The kind picker takes up to 45% of the row (shrinking, with its text cut
+   short, on a narrow screen); the field or value beside it takes the rest. */
 .operand .control:first-child {
-  flex-shrink: 0;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 45%;
+}
+
+.operand .control:first-child .select,
+.operand .control:first-child select {
+  width: 100%;
+}
+
+.operand .control.is-expanded {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 /* A rule's toggle, source and match count: centre the checkbox and tag on the select. */
@@ -261,6 +274,106 @@ label.radio > span:last-child {
 .combine-rule.is-off .combine-rule-name {
   opacity: 0.55;
   text-decoration: line-through;
+}
+
+/* Pipelines: a single column of blocks joined by down arrows, each block a
+   bordered card with its output underneath. Full width at every size. */
+.pipeline-block {
+  border: 1px solid var(--bulma-border);
+  border-radius: var(--bulma-radius);
+  padding: 0.75rem;
+}
+
+.pipeline-block-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.pipeline-block-title {
+  font-size: 1.05rem;
+}
+
+.pipeline-block-tools {
+  margin: 0 0 0 auto;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.pipeline-block-tools .button {
+  margin-bottom: 0;
+}
+
+.pipeline-arrow {
+  display: flex;
+  justify-content: center;
+  padding: 0.25rem 0;
+  color: var(--bulma-text-weak);
+}
+
+.pipeline-output {
+  margin-top: 0.5rem;
+}
+
+.pipeline-result {
+  margin-top: 0.75rem;
+}
+
+/* A condition row: the comparison with its remove button in the corner. */
+.condition-row {
+  position: relative;
+  border: 1px dashed var(--bulma-border);
+  border-radius: var(--bulma-radius);
+  padding: 0.75rem 2.25rem 0.25rem 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.condition-row-remove {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+}
+
+/* On a phone the pipeline nests four boxes deep (panel, pipeline, block,
+   condition), so each gives up some padding to leave room for the inputs. */
+@media screen and (max-width: 768px) {
+  .pipeline-stack {
+    margin-inline: -0.5rem;
+  }
+
+  .pipeline-block {
+    padding: 0.5rem;
+  }
+
+  .condition-row {
+    padding: 0.5rem 2rem 0.1rem 0.5rem;
+  }
+
+  .condition-row-remove {
+    top: 0.5rem;
+    right: 0.5rem;
+  }
+
+  /* Each side of a condition stacks its type picker above its field, both
+     full width, instead of squeezing them onto one line. */
+  .condition-row .operand {
+    flex-wrap: wrap;
+    row-gap: 0.25rem;
+  }
+
+  .condition-row .operand .control,
+  .condition-row .operand .control:first-child {
+    flex: 1 1 100%;
+    max-width: 100%;
+    margin-inline-end: 0;
+  }
+
+  .condition-row .operand .input,
+  .condition-row .operand select {
+    border-radius: var(--bulma-radius);
+  }
 }
 
 /* A source's fetch status tag and link, centred on each other. */

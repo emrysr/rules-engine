@@ -4,6 +4,9 @@ import jsonLogic from 'json-logic-js'
 import { parseConfig } from '@/config'
 import { typeNoun } from '@/fieldTypes'
 import { compileGroup, evaluateGroup, isRuleGroup, mapKeys } from '@/combine'
+import { entryPaths } from '@/comparison'
+import { isPipeline, runPipeline } from '@/pipeline'
+import type { Block, Pipeline } from '@/pipeline'
 import {
   FORM_NAMESPACE,
   buildRuleData,
@@ -110,6 +113,11 @@ function validCombine(value: unknown): Record<string, RuleGroup> {
   return Object.fromEntries(Object.entries(value).filter(([, g]) => isRuleGroup(g)))
 }
 
+/** Keep only well-formed pipelines from cached or imported data. */
+function validPipelines(value: unknown): Pipeline[] {
+  return Array.isArray(value) ? value.filter(isPipeline) : []
+}
+
 export const useEngineStore = defineStore('engine', () => {
   const cached = loadCache()
 
@@ -135,6 +143,8 @@ export const useEngineStore = defineStore('engine', () => {
    * the user edits it.
    */
   const combine = ref<Record<string, RuleGroup>>(validCombine(cached?.combine))
+  /** Pipelines: stacks of blocks that each compile to one JSON Logic expression. */
+  const pipelines = ref<Pipeline[]>(validPipelines(cached?.pipelines))
   const sectionOpen = reactive<Record<SectionName, boolean>>({
     ...defaultSectionOpen,
     ...cached?.sectionOpen,
@@ -281,6 +291,39 @@ export const useEngineStore = defineStore('engine', () => {
     return out
   })
 
+  /** Form fields as rules read them, for pickers: full `formData.…` path and a readable name. */
+  const formFieldOptions = computed(() =>
+    schemaFields.value.map((f) => {
+      const label = f.label || f.key
+      return { path: rulePath(f), name: f.group ? `${f.group} › ${label}` : label }
+    }),
+  )
+
+  /** Every values source's value paths, for pickers, e.g. teetime.target_day. */
+  const valuePaths = computed(() =>
+    valueSources.value.flatMap((s) => {
+      const values = sourceValues[s.key]
+      return values && typeof values === 'object'
+        ? entryPaths([values as Record<string, unknown>]).map((p) => `${s.key}.${p}`)
+        : []
+    }),
+  )
+
+  /**
+   * Everything a pipeline can read, by name: each list source's entries,
+   * each values source's values, and the form values under `formData`.
+   */
+  const pipelineScope = computed<Record<string, unknown>>(() => ({
+    ...Object.fromEntries(listSources.value.map((s) => [s.key, rawData[s.key]])),
+    ...valueScope.value,
+    [FORM_NAMESPACE]: ruleFormData.value,
+  }))
+
+  /** Each pipeline's block-by-block results, by pipeline name. */
+  const pipelineResults = computed(() =>
+    Object.fromEntries(pipelines.value.map((p) => [p.name, runPipeline(p, pipelineScope.value)])),
+  )
+
   /** A source's rule combination: the stored one, or all its rules ANDed. */
   function combinationFor(source: string): RuleGroup {
     return (
@@ -367,6 +410,7 @@ export const useEngineStore = defineStore('engine', () => {
         schema: schemaFields.value,
         rules: rulesConfig.value,
         combine: Object.fromEntries(listSources.value.map((s) => [s.key, combinationFor(s.key)])),
+        pipelines: pipelines.value,
         formData: { ...formData.value },
       },
     }
@@ -390,6 +434,7 @@ export const useEngineStore = defineStore('engine', () => {
     rulesText.value = JSON.stringify(config.rules, null, 2)
     formData.value = { ...config.formData }
     combine.value = validCombine(config.combine)
+    pipelines.value = validPipelines(config.pipelines)
     for (const key in ruleToggles) delete ruleToggles[key]
     emptyGroups.value = []
     seedFormData(config.schema)
@@ -783,6 +828,44 @@ export const useEngineStore = defineStore('engine', () => {
     })
   }
 
+  // --- Pipelines ------------------------------------------------------------
+  function findPipeline(name: string): Pipeline | undefined {
+    return pipelines.value.find((p) => p.name === name)
+  }
+
+  /** Add a pipeline starting from the first source, with a unique placeholder name, returned for editing. */
+  function addPipeline(): string {
+    let name = 'New pipeline'
+    for (let n = 2; findPipeline(name); n++) name = `New pipeline ${n}`
+    const first = dataSources.value[0]?.key ?? ''
+    pipelines.value = [...pipelines.value, { name, blocks: [{ type: 'source', source: first }] }]
+    return name
+  }
+
+  function renamePipeline(from: string, to: string): string {
+    if (findPipeline(to)) return `There's already a pipeline called "${to}".`
+    pipelines.value = pipelines.value.map((p) => (p.name === from ? { ...p, name: to } : p))
+    return ''
+  }
+
+  function removePipeline(name: string): void {
+    pipelines.value = pipelines.value.filter((p) => p.name !== name)
+  }
+
+  /** Swap a pipeline with its neighbour: `step` -1 moves it earlier, 1 later. */
+  function movePipeline(name: string, step: -1 | 1): void {
+    const i = pipelines.value.findIndex((p) => p.name === name)
+    const j = i + step
+    if (i < 0 || j < 0 || j >= pipelines.value.length) return
+    const next = [...pipelines.value]
+    ;[next[i], next[j]] = [next[j], next[i]]
+    pipelines.value = next
+  }
+
+  function setPipelineBlocks(name: string, blocks: Block[]): void {
+    pipelines.value = pipelines.value.map((p) => (p.name === name ? { ...p, blocks } : p))
+  }
+
   // --- Persistence ----------------------------------------------------------
   function persist(): void {
     saveCache({
@@ -792,13 +875,14 @@ export const useEngineStore = defineStore('engine', () => {
       formData: formData.value,
       ruleToggles: { ...ruleToggles },
       combine: combine.value,
+      pipelines: pipelines.value,
       rawData: { ...rawData },
       sourceValues: { ...sourceValues },
       sectionOpen: { ...sectionOpen },
     })
   }
 
-  watch([sourcesText, schemaText, rulesText, formData, ruleToggles, combine, sectionOpen], persist, {
+  watch([sourcesText, schemaText, rulesText, formData, ruleToggles, combine, pipelines, sectionOpen], persist, {
     deep: true,
   })
 
@@ -825,6 +909,15 @@ export const useEngineStore = defineStore('engine', () => {
     formPathError,
     ruleMatchInfo,
     combine,
+    pipelines,
+    pipelineResults,
+    formFieldOptions,
+    valuePaths,
+    addPipeline,
+    renamePipeline,
+    removePipeline,
+    movePipeline,
+    setPipelineBlocks,
     combinationFor,
     setCombination,
     compiledQueries,

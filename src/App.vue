@@ -4,6 +4,7 @@ import { useEngineStore } from '@/stores/engine'
 import ConfigPanel from '@/components/ConfigPanel.vue'
 import FormPanel from '@/components/FormPanel.vue'
 import RulePanel from '@/components/RulePanel.vue'
+import PipelinesPanel from '@/components/PipelinesPanel.vue'
 import ResultsPanel from '@/components/ResultsPanel.vue'
 import SourcesPanel from '@/components/SourcesPanel.vue'
 import ReloadPrompt from '@/components/ReloadPrompt.vue'
@@ -30,6 +31,7 @@ onMounted(() => store.fetchAll())
     <SourcesPanel />
     <FormPanel />
     <RulePanel />
+    <PipelinesPanel />
     <ResultsPanel />
   </div>
 
@@ -84,8 +86,12 @@ onMounted(() => store.fetchAll())
           groups, e.g. (highRating and inStock), or (bloodTypeMatch or adultUser)</s>
         </li>
         <li>
-          List-aware rules - some / all / none over list fields (like a product's tags), and
-          whether map / filter / reduce belong in the builder
+          <s>Pipelines prototype - a mobile-first stack of blocks (source, filter, map, test,
+          count), each feeding the next, compiled to one JSON Logic expression</s>
+        </li>
+        <li>
+          Pipelines, next - more blocks (sum / min / max, map to an object), one pipeline's
+          result as another's input, and whether pipelines replace JSON Rules
         </li>
         <li>
           Replace the browser's confirm prompts with a Bulma dialog

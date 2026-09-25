@@ -15,7 +15,12 @@ const props = defineProps<{
   canMoveRight: boolean
   /** Open the legend for editing on mount, e.g. just after it was created. */
   autoEdit?: boolean
+  /** In a single column: move up / down rather than left / right. */
+  vertical?: boolean
 }>()
+
+const back = props.vertical ? 'up' : 'left'
+const forward = props.vertical ? 'down' : 'right'
 
 const emit = defineEmits<{
   rename: [text: string]
@@ -36,13 +41,17 @@ const emit = defineEmits<{
 
     <div class="form-group-actions">
       <nav class="pagination" :aria-label="`Move ${legend}`">
-        <button type="button" class="pagination-previous" :title="`Move ${noun} left`"
-          :aria-label="`Move ${legend} left`" :disabled="!canMoveLeft" @click="emit('move', -1)">
-          <svg class="move-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>
+        <button type="button" class="pagination-previous" :title="`Move ${noun} ${back}`"
+          :aria-label="`Move ${legend} ${back}`" :disabled="!canMoveLeft" @click="emit('move', -1)">
+          <svg class="move-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path :d="vertical ? 'M6 15l6-6 6 6' : 'M15 6l-6 6 6 6'" />
+          </svg>
         </button>
-        <button type="button" class="pagination-next" :title="`Move ${noun} right`"
-          :aria-label="`Move ${legend} right`" :disabled="!canMoveRight" @click="emit('move', 1)">
-          <svg class="move-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
+        <button type="button" class="pagination-next" :title="`Move ${noun} ${forward}`"
+          :aria-label="`Move ${legend} ${forward}`" :disabled="!canMoveRight" @click="emit('move', 1)">
+          <svg class="move-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path :d="vertical ? 'M6 9l6 6 6-6' : 'M9 6l6 6-6 6'" />
+          </svg>
         </button>
       </nav>
       <slot name="actions" />
