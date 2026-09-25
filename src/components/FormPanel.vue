@@ -11,21 +11,16 @@ import InlineEdit from './InlineEdit.vue'
 const store = useEngineStore()
 
 /**
- * Fields bucketed by their `group`, in the order each group first appears,
- * then any empty groups. Ungrouped fields form their own bucket (legend null)
- * and render without a fieldset. Grouping is presentation only — formData
- * stays flat.
+ * Fields bucketed by their `group`, in the store's group order. Ungrouped
+ * fields form their own bucket (legend null) and render without a fieldset.
+ * Grouping is presentation only — formData stays flat.
  */
-const fieldGroups = computed(() => {
-  const groups = new Map<string | null, SchemaField[]>()
-  for (const f of store.schemaFields) {
-    const legend = f.group || null
-    if (!groups.has(legend)) groups.set(legend, [])
-    groups.get(legend)!.push(f)
-  }
-  for (const g of store.emptyGroups) if (!groups.has(g)) groups.set(g, [])
-  return [...groups].map(([legend, fields]) => ({ legend, fields }))
-})
+const fieldGroups = computed(() =>
+  store.groupOrder.map((legend) => ({
+    legend,
+    fields: store.schemaFields.filter((f) => (f.group || null) === legend),
+  })),
+)
 
 // Radios and multi-option checkboxes put the field's label in a fieldset
 // legend; their `label` section is each option's text, which stays as is.
@@ -83,7 +78,7 @@ function addGroup() {
       <FormKit v-model="store.formData" type="group">
         <div class="fixed-grid has-1-cols-mobile has-2-cols-tablet has-3-cols-desktop">
           <div class="grid">
-            <component :is="g.legend ? 'fieldset' : 'div'" v-for="g in fieldGroups" :key="g.legend ?? ''" class="cell"
+            <component :is="g.legend ? 'fieldset' : 'div'" v-for="(g, i) in fieldGroups" :key="g.legend ?? ''" class="cell"
               :class="{ 'form-group': g.legend }">
               <legend v-if="g.legend" class="label">
                 <InlineEdit :text="g.legend" :auto-edit="g.legend === newGroup"
@@ -104,6 +99,18 @@ function addGroup() {
               </FormKit>
               <p v-if="!g.fields.length" class="help">No fields yet.</p>
               <div v-if="g.legend" class="form-group-actions">
+                <nav class="pagination":aria-label="`Move ${g.legend}`">
+                  <button type="button" class="pagination-previous" title="Move group left"
+                    :aria-label="`Move ${g.legend} left`" :disabled="i === 0"
+                    @click="error = store.moveGroup(g.legend!, -1)">
+                    <svg class="move-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>
+                  </button>
+                  <button type="button" class="pagination-next" title="Move group right"
+                    :aria-label="`Move ${g.legend} right`" :disabled="i === fieldGroups.length - 1"
+                    @click="error = store.moveGroup(g.legend!, 1)">
+                    <svg class="move-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
+                  </button>
+                </nav>
                 <button type="button" class="button" commandfor="field-type-menu" command="toggle-popover"
                   :data-group="g.legend">
                   Add

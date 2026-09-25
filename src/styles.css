@@ -37,10 +37,44 @@ fieldset.form-group > legend {
   margin-bottom: 0;
 }
 
+/* Move arrows on the left, Add on the right. */
 .form-group-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
   margin-top: auto;
   padding-top: 0.5rem;
-  text-align: right;
+}
+
+/* Bulma's pagination reorders and spreads its items for a full page list;
+   here it's just the two arrows side by side. */
+.form-group-actions .pagination {
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  gap: 0.25rem;
+  margin: 0;
+}
+
+.form-group-actions .pagination-previous,
+.form-group-actions .pagination-next {
+  order: initial;
+  flex: none;
+  box-sizing: border-box;
+  width: 2.5em;
+  height: 2.5em; /* the Add button's height */
+  margin: 0;
+  padding: 0;
+}
+
+.move-icon {
+  width: 1.25em;
+  height: 1.25em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 /* A field label with its delete button pushed to the far end. */

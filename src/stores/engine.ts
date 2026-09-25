@@ -270,9 +270,35 @@ export const useEngineStore = defineStore('engine', () => {
   /**
    * Groups with no fields yet. A group otherwise only exists through its
    * fields' `group` value, so a freshly added one is held here until a field
-   * joins it. Session-only: an empty fieldset isn't worth persisting.
+   * joins it, along with the slot it sits in. Session-only: an empty fieldset
+   * isn't worth persisting.
    */
-  const emptyGroups = ref<string[]>([])
+  const emptyGroups = ref<{ name: string; at: number }[]>([])
+
+  /**
+   * Groups in display order: the order each first appears in the schema, with
+   * empty groups slotted in at their positions. `null` is the ungrouped bucket.
+   */
+  const groupOrder = computed(() => {
+    const order: (string | null)[] = []
+    for (const f of schemaFields.value) {
+      const g = f.group || null
+      if (!order.includes(g)) order.push(g)
+    }
+    for (const e of [...emptyGroups.value].sort((a, b) => a.at - b.at)) {
+      if (!order.includes(e.name)) order.splice(Math.min(e.at, order.length), 0, e.name)
+    }
+    return order
+  })
+
+  /** Fields sorted so their groups appear in `order`, keeping order within each group. */
+  function sortByGroup(fields: SchemaField[], order: (string | null)[]): SchemaField[] {
+    const rank = (f: SchemaField) => {
+      const i = order.indexOf(f.group || null)
+      return i < 0 ? order.length : i
+    }
+    return [...fields].sort((a, b) => rank(a) - rank(b))
+  }
 
   /**
    * Rewrite the schema through `edit`, keeping the rules in step: any field
@@ -346,8 +372,10 @@ export const useEngineStore = defineStore('engine', () => {
     if (extra.options) field.options = extra.options
     else if (type === 'select' || type === 'radio') field.options = ['Option 1', 'Option 2']
     if (group) field.group = group
-    const error = editSchema((fs) => [...fs, field])
-    if (!error) emptyGroups.value = emptyGroups.value.filter((g) => g !== group)
+    // Sorted so a field joining an empty group lands in that group's slot.
+    const order = groupOrder.value
+    const error = editSchema((fs) => sortByGroup([...fs, field], order))
+    if (!error) emptyGroups.value = emptyGroups.value.filter((e) => e.name !== group)
     return error
   }
 
@@ -358,6 +386,7 @@ export const useEngineStore = defineStore('engine', () => {
   /** Remove a field. Its fieldset stays on screen, empty, if it was the last one. */
   function removeField(key: string): string {
     const group = schemaFields.value.find((f) => f.key === key)?.group
+    const at = groupOrder.value.indexOf(group || null)
     const error = editSchema((fs) => fs.filter((f) => f.key !== key))
     if (error) return error
     // Drop the value once the input has unmounted: its `preserve` prop would
@@ -368,17 +397,17 @@ export const useEngineStore = defineStore('engine', () => {
       formData.value = next
     })
     if (group && !schemaFields.value.some((f) => f.group === group)) {
-      emptyGroups.value = [...emptyGroups.value, group]
+      emptyGroups.value = [...emptyGroups.value, { name: group, at }]
     }
     return ''
   }
 
   /** Add an empty group with a unique placeholder name, returned for editing. */
   function addGroup(): string {
-    const taken = new Set([...schemaFields.value.map((f) => f.group), ...emptyGroups.value])
+    const taken = new Set(groupOrder.value)
     let name = 'New group'
     for (let n = 2; taken.has(name); n++) name = `New group ${n}`
-    emptyGroups.value = [...emptyGroups.value, name]
+    emptyGroups.value = [...emptyGroups.value, { name, at: groupOrder.value.length }]
     return name
   }
 
@@ -386,8 +415,27 @@ export const useEngineStore = defineStore('engine', () => {
   function renameGroup(from: string, to: string): string {
     const error = editSchema((fs) => fs.map((f) => (f.group === from ? { ...f, group: to } : f)))
     if (error) return error
-    const renamed = new Set(emptyGroups.value.map((g) => (g === from ? to : g)))
-    emptyGroups.value = [...renamed].filter((g) => !schemaFields.value.some((f) => f.group === g))
+    const seen = new Set<string>()
+    emptyGroups.value = emptyGroups.value
+      .map((e) => (e.name === from ? { ...e, name: to } : e))
+      .filter((e) => {
+        if (seen.has(e.name) || schemaFields.value.some((f) => f.group === e.name)) return false
+        seen.add(e.name)
+        return true
+      })
+    return ''
+  }
+
+  /** Swap a group with its neighbour: `step` -1 moves it earlier, 1 later. */
+  function moveGroup(name: string, step: -1 | 1): string {
+    const order = [...groupOrder.value]
+    const i = order.indexOf(name)
+    const j = i + step
+    if (i < 0 || j < 0 || j >= order.length) return ''
+    ;[order[i], order[j]] = [order[j], order[i]]
+    const error = editSchema((fs) => sortByGroup(fs, order))
+    if (error) return error
+    emptyGroups.value = emptyGroups.value.map((e) => ({ ...e, at: order.indexOf(e.name) }))
     return ''
   }
 
@@ -435,11 +483,13 @@ export const useEngineStore = defineStore('engine', () => {
     exportConfig,
     importConfig,
     emptyGroups,
+    groupOrder,
     placeholderLabel,
     addField,
     renameField,
     removeField,
     addGroup,
     renameGroup,
+    moveGroup,
   }
 })

@@ -15,7 +15,7 @@ are all JSON, editable at runtime:
 | Config | Shape | Does |
 | --- | --- | --- |
 | **Data sources** | `{ key, url }` | `key` is the namespace rules target, and the response field the array is auto-extracted from. |
-| **Form schema** | `{ key, label, type, options?, default?, group?, classes? }` | Rendered as real `<FormKit>` inputs; `group` is the fieldset it sits in. |
+| **Form schema** | `{ key, label, type, options?, default?, group?, classes? }` | Rendered as real `<FormKit>` inputs; `group` is the fieldset it sits in. Fieldsets show in the order their groups first appear; the arrows under each one move it. |
 | **Rules** | `{ key, source, enabled, logic }` | `logic` is JSON Logic. `source` says which data source it filters. |
 
 The point is the coupling between the last two: a rule reads an entry's fields
