@@ -336,6 +336,19 @@ label.radio > span:last-child {
   right: 0.75rem;
 }
 
+/* Rows sit indented under the all of / any of / none of they join, and a
+   "has an item where" condition hangs off its list field on a guide line,
+   so each level of nesting reads as its own step in. */
+.condition-editor > .condition-row {
+  margin-left: 1rem;
+}
+
+.condition-editor .condition-editor {
+  margin-left: 0.25rem;
+  padding-left: 0.75rem;
+  border-left: 2px solid var(--bulma-border);
+}
+
 /* On a phone the pipeline nests four boxes deep (panel, pipeline, block,
    condition), so each gives up some padding to leave room for the inputs. */
 @media screen and (max-width: 768px) {
@@ -354,6 +367,15 @@ label.radio > span:last-child {
   .condition-row-remove {
     top: 0.5rem;
     right: 0.5rem;
+  }
+
+  .condition-editor > .condition-row {
+    margin-left: 0.5rem;
+  }
+
+  .condition-editor .condition-editor {
+    margin-left: 0;
+    padding-left: 0.5rem;
   }
 
   /* Each side of a condition stacks its type picker above its field, both
