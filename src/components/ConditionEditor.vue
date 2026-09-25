@@ -34,6 +34,14 @@ const objects = computed(
 
 const itemPaths = computed(() => entryPaths(objects.value))
 
+/** The items are lists themselves (a map to several fields gives these), so no list field is needed. */
+const itemsAreLists = computed(() => props.items.length > 0 && props.items.slice(0, 20).every(Array.isArray))
+
+/** The items are plain values ("Sofia", 4), with no fields: an empty field reads the value itself. */
+const itemsArePlain = computed(
+  () => props.items.length > 0 && props.items.slice(0, 20).every((i) => i === null || typeof i !== 'object'),
+)
+
 /** Item fields holding lists, for "has an item where". */
 const listPaths = computed(() =>
   itemPaths.value.filter((p) => objects.value.slice(0, 20).some((o) => Array.isArray(read(o, p)))),
@@ -41,8 +49,9 @@ const listPaths = computed(() =>
 
 /** The inner items of a list field across the items, for the nested editor's suggestions. */
 function innerItems(path: string): unknown[] {
-  return objects.value.slice(0, 20).flatMap((o) => {
-    const list = read(o, path)
+  // An empty path reads the item itself, which is the list when the items are lists.
+  return props.items.slice(0, 20).flatMap((item) => {
+    const list = path ? (objects.value.includes(item as Record<string, unknown>) ? read(item, path) : undefined) : item
     return Array.isArray(list) ? list : []
   })
 }
@@ -96,7 +105,8 @@ function addHasItem() {
           <label class="label" :for="`${listId}-${i}`">List field</label>
           <div class="control">
             <input :id="`${listId}-${i}`" class="input" type="text" :list="`${listId}-lists`"
-              :value="parseHasItem(row)!.path" placeholder="e.g. products"
+              :value="parseHasItem(row)!.path"
+              :placeholder="itemsAreLists ? 'Empty: each item from the block above' : 'e.g. products'"
               @change="setHasItem(i, { ...parseHasItem(row)!, path: ($event.target as HTMLInputElement).value.trim() })" />
           </div>
           <p class="help">has an item where:</p>
@@ -106,6 +116,7 @@ function addHasItem() {
           @update="(condition) => setHasItem(i, { ...parseHasItem(row)!, condition })" />
       </template>
       <ComparisonRow v-else :logic="row" :entry-paths="itemPaths" entry-label="Item field" :pipelines="pipelines"
+        :entry-placeholder="itemsArePlain ? 'Empty: the value itself' : undefined"
         :label="`${label} condition ${i + 1}`" @update="(logic) => setRow(i, logic)" />
     </div>
     <p v-if="!condition.items.length" class="help mb-3">No conditions yet - every item passes.</p>

@@ -21,8 +21,10 @@ const props = withDefaults(defineProps<{
   sourcePaths: string[]
   /** Pipelines whose result can be read here, by name; none outside pipelines. */
   pipelines?: string[]
+  /** Hint in an empty entry field box. */
+  entryPlaceholder?: string
   label: string
-}>(), { pipelines: () => [] })
+}>(), { pipelines: () => [], entryPlaceholder: 'e.g. rating' })
 const emit = defineEmits<{ update: [operand: Operand] }>()
 
 const listId = useId()
@@ -90,7 +92,7 @@ function inputValue(e: Event): string {
     </div>
 
     <div v-if="operand.kind === 'entry'" class="control is-expanded">
-      <input class="input" type="text" :list="listId" :value="operand.path" placeholder="e.g. rating"
+      <input class="input" type="text" :list="listId" :value="operand.path" :placeholder="entryPlaceholder"
         :aria-label="`${label}: ${entryLabel.toLowerCase()}`"
         @change="emit('update', { kind: 'entry', path: inputValue($event).trim() })" />
       <datalist :id="listId">

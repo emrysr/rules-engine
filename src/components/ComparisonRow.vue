@@ -19,6 +19,8 @@ const props = withDefaults(
     entryLabel?: string
     /** Pipelines whose result this comparison can read, by name. */
     pipelines?: string[]
+    /** Hint in an empty entry field box, when the default doesn't fit the data. */
+    entryPlaceholder?: string
     label: string
   }>(),
   { entryLabel: 'Entry field', pipelines: () => [] },
@@ -51,7 +53,7 @@ function setOp(op: string) {
   <template v-if="comparison">
     <OperandPicker :operand="comparison.left" :entry-paths="entryPaths" :entry-label="entryLabel"
       :form-fields="store.formFieldOptions" :source-paths="store.valuePaths" :pipelines="pipelines"
-      :label="`${label} left side`"
+      :entry-placeholder="entryPlaceholder" :label="`${label} left side`"
       @update="(o) => setSide('left', o)" />
     <div class="field">
       <div class="control">
@@ -65,7 +67,7 @@ function setOp(op: string) {
     </div>
     <OperandPicker :operand="comparison.right" :entry-paths="entryPaths" :entry-label="entryLabel"
       :form-fields="store.formFieldOptions" :source-paths="store.valuePaths" :pipelines="pipelines"
-      :label="`${label} right side`"
+      :entry-placeholder="entryPlaceholder" :label="`${label} right side`"
       @update="(o) => setSide('right', o)" />
   </template>
 </template>
