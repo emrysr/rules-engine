@@ -306,6 +306,14 @@ label.radio > span:last-child {
   margin-bottom: 0;
 }
 
+/* A pipeline's steps hang off its source: indented, on a guide line that
+   runs down from the source block to "Add a block". */
+.pipeline-steps {
+  margin-left: 1.25rem;
+  padding-left: 1rem;
+  border-left: 2px solid var(--bulma-border);
+}
+
 .pipeline-arrow {
   display: flex;
   justify-content: center;
@@ -358,6 +366,11 @@ label.radio > span:last-child {
 
   .pipeline-block {
     padding: 0.5rem;
+  }
+
+  .pipeline-steps {
+    margin-left: 0.5rem;
+    padding-left: 0.5rem;
   }
 
   .condition-row {

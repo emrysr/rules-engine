@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, useId } from 'vue'
+import { computed, ref } from 'vue'
 import { entryPaths } from '@/comparison'
 import { BLOCK_LABELS, describe, mapFields } from '@/pipeline'
 import type { Block, StepResult } from '@/pipeline'
@@ -23,7 +23,6 @@ const props = defineProps<{
 const emit = defineEmits<{ update: [block: Block]; remove: []; move: [step: -1 | 1] }>()
 
 const store = useEngineStore()
-const listId = useId()
 
 /** The items coming in, for field suggestions. */
 const items = computed(() => (Array.isArray(props.input) ? props.input : []))
@@ -104,10 +103,9 @@ function value(e: Event): string {
     </div>
 
     <div v-if="block.type === 'source'" class="field">
-      <label class="label" :for="`${listId}-source`">Source</label>
       <div class="control">
         <div class="select is-fullwidth">
-          <select :id="`${listId}-source`" :value="block.source" @change="patch({ source: value($event) })">
+          <select :value="block.source" :aria-label="`${label}: data source`" @change="patch({ source: value($event) })">
             <option value="" disabled>Choose a source</option>
             <option v-for="s in sourceOptions" :key="s" :value="s">{{ s }}</option>
           </select>

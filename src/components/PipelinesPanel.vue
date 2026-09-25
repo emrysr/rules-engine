@@ -98,28 +98,39 @@ function removePipeline(p: Pipeline) {
             fixed :auto-edit="p.name === newPipeline"
             @rename="(t) => (error = store.renamePipeline(p.name, t))" @delete="removePipeline(p)">
             <div class="pipeline-stack mt-2">
-              <template v-for="(b, i) in p.blocks" :key="i">
-                <div v-if="i > 0" class="pipeline-arrow" aria-hidden="true">
-                  <svg class="move-icon" viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6" /></svg>
-                </div>
-                <PipelineBlock :block="b" :input="inputOf(p, i)" :result="results(p)[i]" :pipelines="readable(pi)"
-                  :label="`${p.name} ${BLOCK_LABELS[b.type].toLowerCase()} ${i + 1}`"
-                  :can-move-up="i > 1" :can-move-down="i > 0 && i < p.blocks.length - 1"
-                  @update="(nb) => setBlocks(p, p.blocks.map((x, j) => (j === i ? nb : x)))"
-                  @remove="setBlocks(p, p.blocks.filter((_, j) => j !== i))"
-                  @move="(step) => moveBlock(p, i, step)" />
+              <!-- The source first, then its steps indented beneath it on a guide line. -->
+              <template v-for="b in p.blocks.slice(0, 1)" :key="0">
+                <PipelineBlock :block="b" :input="undefined" :result="results(p)[0]" :pipelines="readable(pi)"
+                  :label="`${p.name} source`" :can-move-up="false" :can-move-down="false"
+                  @update="(nb) => setBlocks(p, [nb, ...p.blocks.slice(1)])" />
               </template>
 
-              <div class="pipeline-arrow" aria-hidden="true">
-                <svg class="move-icon" viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6" /></svg>
-              </div>
-              <div class="field">
-                <div class="control">
-                  <div class="select is-fullwidth">
-                    <select :aria-label="`${p.name}: add a block`" @change="addBlock(p, $event)">
-                      <option value="">Add a block…</option>
-                      <option v-for="t in ADDABLE" :key="t" :value="t">{{ BLOCK_LABELS[t] }}</option>
-                    </select>
+              <div class="pipeline-steps">
+                <template v-for="(b, i) in p.blocks" :key="i">
+                  <template v-if="i > 0">
+                    <div class="pipeline-arrow" aria-hidden="true">
+                      <svg class="move-icon" viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6" /></svg>
+                    </div>
+                    <PipelineBlock :block="b" :input="inputOf(p, i)" :result="results(p)[i]" :pipelines="readable(pi)"
+                      :label="`${p.name} ${BLOCK_LABELS[b.type].toLowerCase()} ${i + 1}`"
+                      :can-move-up="i > 1" :can-move-down="i < p.blocks.length - 1"
+                      @update="(nb) => setBlocks(p, p.blocks.map((x, j) => (j === i ? nb : x)))"
+                      @remove="setBlocks(p, p.blocks.filter((_, j) => j !== i))"
+                      @move="(step) => moveBlock(p, i, step)" />
+                  </template>
+                </template>
+
+                <div class="pipeline-arrow" aria-hidden="true">
+                  <svg class="move-icon" viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6" /></svg>
+                </div>
+                <div class="field">
+                  <div class="control">
+                    <div class="select is-fullwidth">
+                      <select :aria-label="`${p.name}: add a block`" @change="addBlock(p, $event)">
+                        <option value="">Add a block…</option>
+                        <option v-for="t in ADDABLE" :key="t" :value="t">{{ BLOCK_LABELS[t] }}</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
               </div>
