@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { reactive, ref } from 'vue'
 import { BLOCK_LABELS, describe, newBlock } from '@/pipeline'
 import type { Block, BlockType, Pipeline, StepResult } from '@/pipeline'
 import { useEngineStore } from '@/stores/engine'
 import CollapsibleBox from './CollapsibleBox.vue'
 import CopyJsonButton from './CopyJsonButton.vue'
-import EditableFieldset from './EditableFieldset.vue'
 import GridAddCell from './GridAddCell.vue'
+import InlineEdit from './InlineEdit.vue'
 import PipelineBlock from './PipelineBlock.vue'
 
 const store = useEngineStore()
@@ -14,6 +14,20 @@ const store = useEngineStore()
 const error = ref('')
 /** The pipeline just created, so its legend opens straight into editing. */
 const newPipeline = ref('')
+
+/** Pipelines folded down to their title bar, by name. Session-only. */
+const closed = reactive<Record<string, boolean>>({})
+
+function onToggle(p: Pipeline, e: Event) {
+  closed[p.name] = !(e.target as HTMLDetailsElement).open
+}
+
+/** The title bar's summary of the result: its size, or why there isn't one. */
+function headTag(p: Pipeline): { text: string; cls: string } {
+  if (p.off) return { text: 'Off', cls: '' }
+  const r = final(p)
+  return r?.ok ? { text: describe(r.value), cls: 'is-success' } : { text: 'No result', cls: 'is-danger' }
+}
 
 const ADDABLE: Exclude<BlockType, 'source'>[] = ['filter', 'map', 'test', 'count']
 
@@ -83,7 +97,9 @@ function removePipeline(p: Pipeline) {
         item with <strong>Check a list</strong>. A pipeline can also read the result of the
         pipeline directly above it (as <strong>Pipeline result</strong>, e.g. <em>id is one of
         Buyers</em>), so the pipelines build towards one answer, shown under Results. They stay in
-        the order they're added, as each one is built on the one above.
+        the order they're added, as each one is built on the one above. Untick a pipeline to leave
+        it out of the result while you test (the first is always on), and click its title bar to
+        fold it away.
         <strong>Copy JSON</strong> gives the whole pipeline as one JSON Logic expression, with the
         Source Filters and the pipeline above written in - to run it, your app needs the sources
         and form values in scope, including inside <code>filter</code>, <code>map</code> and
@@ -94,9 +110,25 @@ function removePipeline(p: Pipeline) {
 
       <div class="fixed-grid has-1-cols">
         <div class="grid">
-          <EditableFieldset v-for="(p, pi) in store.pipelines" :key="p.name" :legend="p.name" noun="pipeline"
-            fixed :auto-edit="p.name === newPipeline"
-            @rename="(t) => (error = store.renamePipeline(p.name, t))" @delete="removePipeline(p)">
+          <!-- In the title bar, the name renames and the checkbox and delete work as they do
+               anywhere; clicking the rest of the bar folds the pipeline away or opens it. -->
+          <details v-for="(p, pi) in store.pipelines" :key="p.name" class="cell pipeline-card"
+            :class="{ 'is-off': p.off }" :open="!closed[p.name]" @toggle="onToggle(p, $event)">
+            <summary class="pipeline-card-head">
+              <svg class="move-icon pipeline-card-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
+              <input type="checkbox" :checked="pi === 0 || !p.off" :disabled="pi === 0"
+                :aria-label="`${p.name}: use in the result`"
+                :title="pi === 0 ? 'The first pipeline is always on: the others are built on it' : 'Use this pipeline in the result'"
+                @change="store.setPipelineOn(p.name, ($event.target as HTMLInputElement).checked)" />
+              <strong class="pipeline-card-name">
+                <InlineEdit :text="p.name" :auto-edit="p.name === newPipeline"
+                  @save="(t) => (error = store.renamePipeline(p.name, t))" />
+              </strong>
+              <span class="tag" :class="headTag(p).cls">{{ headTag(p).text }}</span>
+              <button type="button" class="delete pipeline-card-delete" title="Delete pipeline"
+                :aria-label="`Delete ${p.name}`" @click="removePipeline(p)"></button>
+            </summary>
+
             <div class="pipeline-stack mt-2">
               <!-- The source first, then its steps indented beneath it on a guide line. -->
               <template v-for="b in p.blocks.slice(0, 1)" :key="0">
@@ -142,10 +174,10 @@ function removePipeline(p: Pipeline) {
               </p>
             </div>
 
-            <template #actions>
+            <div class="pipeline-card-actions">
               <CopyJsonButton :value="() => store.compiledPipeline(p)" title="Copy the pipeline as one JSON Logic expression" />
-            </template>
-          </EditableFieldset>
+            </div>
+          </details>
           <GridAddCell label="Add pipeline" @add="addPipeline" />
         </div>
       </div>

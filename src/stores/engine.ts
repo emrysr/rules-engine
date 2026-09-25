@@ -342,9 +342,14 @@ export const useEngineStore = defineStore('engine', () => {
     })
   }
 
-  /** The pipeline whose result is the Results panel's: the chosen one, else the last. */
+  /** The pipelines switched on. The first is always on: the others are built on it. */
+  const livePipelines = computed(() => pipelines.value.filter((p, i) => i === 0 || !p.off))
+
+  /** The pipeline whose result is the Results panel's: the chosen one if it's on, else the last one on. */
   const resultOf = computed<Pipeline | undefined>(
-    () => pipelines.value.find((p) => p.name === resultPipeline.value) ?? pipelines.value[pipelines.value.length - 1],
+    () =>
+      livePipelines.value.find((p) => p.name === resultPipeline.value) ??
+      livePipelines.value[livePipelines.value.length - 1],
   )
 
   /** A source's rule combination: the stored one, or all its rules ANDed. */
@@ -890,6 +895,15 @@ export const useEngineStore = defineStore('engine', () => {
     pipelines.value = pipelines.value.filter((p) => p.name !== name)
   }
 
+  /** Switch a pipeline on or off; the first can't be switched off. */
+  function setPipelineOn(name: string, on: boolean): void {
+    pipelines.value = pipelines.value.map((p, i) => {
+      if (p.name !== name || i === 0) return p
+      const { off: _, ...rest } = p
+      return on ? rest : { ...rest, off: true }
+    })
+  }
+
   function setPipelineBlocks(name: string, blocks: Block[]): void {
     pipelines.value = pipelines.value.map((p) => (p.name === name ? { ...p, blocks } : p))
   }
@@ -951,6 +965,8 @@ export const useEngineStore = defineStore('engine', () => {
     renamePipeline,
     removePipeline,
     setPipelineBlocks,
+    setPipelineOn,
+    livePipelines,
     combinationFor,
     setCombination,
     compiledQueries,

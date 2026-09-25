@@ -11,12 +11,10 @@ const props = defineProps<{
   legend: string
   /** What it is, for button titles: "group", "rule". */
   noun: string
-  canMoveLeft?: boolean
-  canMoveRight?: boolean
+  canMoveLeft: boolean
+  canMoveRight: boolean
   /** Open the legend for editing on mount, e.g. just after it was created. */
   autoEdit?: boolean
-  /** Where it sits matters (a pipeline reads the one above), so it has no move arrows. */
-  fixed?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -37,7 +35,7 @@ const emit = defineEmits<{
     <slot />
 
     <div class="form-group-actions">
-      <nav v-if="!fixed" class="pagination" :aria-label="`Move ${legend}`">
+      <nav class="pagination" :aria-label="`Move ${legend}`">
         <button type="button" class="pagination-previous" :title="`Move ${noun} left`"
           :aria-label="`Move ${legend} left`" :disabled="!canMoveLeft" @click="emit('move', -1)">
           <svg class="move-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>
@@ -47,7 +45,6 @@ const emit = defineEmits<{
           <svg class="move-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
         </button>
       </nav>
-      <span v-else></span>
       <slot name="actions" />
     </div>
   </fieldset>

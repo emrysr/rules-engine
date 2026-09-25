@@ -22,7 +22,7 @@ const json = computed(() => {
   return JSON.stringify(Array.isArray(r.value) && r.value.length > 20 ? r.value.slice(0, 20) : r.value, null, 2)
 })
 
-const lastName = computed(() => store.pipelines[store.pipelines.length - 1]?.name ?? '')
+const lastName = computed(() => store.livePipelines[store.livePipelines.length - 1]?.name ?? '')
 </script>
 
 <template>
@@ -42,8 +42,8 @@ const lastName = computed(() => store.pipelines[store.pipelines.length - 1]?.nam
             <div class="control">
               <div class="select">
                 <select :id="id" v-model="store.resultPipeline">
-                  <option value="">The last pipeline ({{ lastName }})</option>
-                  <option v-for="p in store.pipelines" :key="p.name" :value="p.name">{{ p.name }}</option>
+                  <option value="">The last pipeline switched on ({{ lastName }})</option>
+                  <option v-for="p in store.livePipelines" :key="p.name" :value="p.name">{{ p.name }}</option>
                 </select>
               </div>
             </div>

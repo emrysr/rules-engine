@@ -40,6 +40,7 @@ onMounted(() => {
     v-model="draft"
     class="input inline-edit-input"
     type="text"
+    @click.prevent
     @keydown.enter.prevent="commit"
     @keydown.escape.prevent="editing = false"
     @blur="commit"

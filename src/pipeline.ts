@@ -45,6 +45,8 @@ export type BlockType = Block['type']
 export interface Pipeline {
   name: string
   blocks: Block[]
+  /** Switched off: still runs for its previews, but Results and the pipeline below skip it. */
+  off?: boolean
 }
 
 export const BLOCK_LABELS: Record<BlockType, string> = {
@@ -357,7 +359,9 @@ export function runPipelines(
     for (const other of pipelines) {
       if (other !== prev) problems[other.name] = `"${p.name}" can only read the pipeline directly above it.`
     }
-    if (prev) {
+    if (prev?.off) {
+      problems[prev.name] = `"${prev.name}" is switched off - tick it to use its result here.`
+    } else if (prev) {
       const last = finalResult(out[prev.name])
       if (last?.ok) results[prev.name] = last.value
       else problems[prev.name] = `"${prev.name}" has no result yet.`

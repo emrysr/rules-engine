@@ -490,3 +490,50 @@ label.radio > span:last-child {
   background: none;
   color: inherit;
 }
+
+/* A pipeline: a bordered card that folds down to its title bar. The bar
+   holds the fold chevron, the on/off checkbox, the name and a result tag. */
+.pipeline-card {
+  border: 1px solid var(--bulma-border);
+  border-radius: var(--bulma-radius);
+  padding: 0.5rem 1rem 1rem;
+}
+
+.pipeline-card:not([open]) {
+  padding-bottom: 0.5rem;
+}
+
+.pipeline-card-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.pipeline-card-head::-webkit-details-marker {
+  display: none;
+}
+
+.pipeline-card-chevron {
+  flex: none;
+  transition: transform 0.15s;
+}
+
+.pipeline-card[open] > .pipeline-card-head .pipeline-card-chevron {
+  transform: rotate(90deg);
+}
+
+.pipeline-card-delete {
+  margin-left: auto;
+}
+
+.pipeline-card.is-off > .pipeline-stack {
+  opacity: 0.55;
+}
+
+.pipeline-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 0.5rem;
+}
