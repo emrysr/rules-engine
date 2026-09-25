@@ -7,6 +7,11 @@ import type { RulesLogic } from 'json-logic-js'
 export interface DataSource {
   key: string
   url: string
+  /**
+   * Dotted path from the top of the response to the list, for APIs that wrap
+   * it (`data`, `response.items`). Without it the list is found automatically.
+   */
+  listPath?: string
 }
 
 /** One choice of a select, radio or checkbox group: what's shown, what's stored. */

@@ -66,8 +66,21 @@ function removeSource(key: string) {
               <div class="control">
                 <input :id="`source-url-${s.key}`" class="input" type="url" :value="s.url"
                   placeholder="https://example.com/api/items"
-                  @change="error = store.setSourceUrl(s.key, ($event.target as HTMLInputElement).value.trim())" />
+                  @change="error = store.updateSource(s.key, { url: ($event.target as HTMLInputElement).value.trim() })" />
               </div>
+            </div>
+
+            <div class="field">
+              <label class="label" :for="`source-list-path-${s.key}`">List path</label>
+              <div class="control">
+                <input :id="`source-list-path-${s.key}`" class="input" type="text" :value="s.listPath ?? ''"
+                  placeholder="Found automatically"
+                  @change="error = store.updateSource(s.key, { listPath: ($event.target as HTMLInputElement).value.trim() })" />
+              </div>
+              <p class="help">
+                Where the list sits in the response when it's wrapped, e.g. <code>data</code> or
+                <code>response.items</code>.
+              </p>
               <p v-if="store.errors[s.key]" class="help is-danger">{{ store.errors[s.key] }}</p>
             </div>
 

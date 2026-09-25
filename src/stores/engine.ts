@@ -52,7 +52,7 @@ function saveCache(data: PersistedState): void {
  * Data sources return either a bare array or an object wrapping one. Prefer the
  * field named after the source key, then fall back to the first array found.
  */
-function extractList(resp: unknown, key: string): Entry[] {
+function findList(resp: unknown, key: string): Entry[] | null {
   if (Array.isArray(resp)) return resp as Entry[]
   if (resp && typeof resp === 'object') {
     const obj = resp as Record<string, unknown>
@@ -61,7 +61,28 @@ function extractList(resp: unknown, key: string): Entry[] {
       if (Array.isArray(obj[k])) return obj[k] as Entry[]
     }
   }
-  return []
+  return null
+}
+
+/**
+ * The source's list from its response. With a `listPath`, walk down to it
+ * first (then find the list there, if the path stops at an object holding
+ * one); a path that isn't in the response, or leads to no list, is an error
+ * rather than an empty source. Without one, an unrecognised response is
+ * just empty, as before.
+ */
+function extractList(resp: unknown, src: DataSource): Entry[] {
+  if (!src.listPath) return findList(resp, src.key) ?? []
+  let node = resp
+  for (const part of src.listPath.split('.')) {
+    if (!node || typeof node !== 'object' || !(part in node)) {
+      throw new Error(`no "${src.listPath}" in the response`)
+    }
+    node = (node as Record<string, unknown>)[part]
+  }
+  const list = findList(node, src.key)
+  if (!list) throw new Error(`"${src.listPath}" isn't a list`)
+  return list
 }
 
 export const useEngineStore = defineStore('engine', () => {
@@ -143,7 +164,7 @@ export const useEngineStore = defineStore('engine', () => {
         headers: { Accept: 'application/json' },
       })
       if (!res.ok) throw new Error('HTTP ' + res.status)
-      rawData[src.key] = extractList(await res.json(), src.key)
+      rawData[src.key] = extractList(await res.json(), src)
     } catch (e) {
       const message = (e as Error).message
       errors[src.key] =
@@ -492,11 +513,22 @@ export const useEngineStore = defineStore('engine', () => {
     return error ? { error } : { key }
   }
 
-  /** Change a source's URL and fetch from it straight away. */
-  function setSourceUrl(key: string, url: string): string {
-    const error = editSources((ss) => ss.map((s) => (s.key === key ? { ...s, url } : s)))
+  /**
+   * Change a source's URL or list path and refetch it straight away. A blank
+   * list path is dropped rather than stored as "".
+   */
+  function updateSource(key: string, patch: Partial<Pick<DataSource, 'url' | 'listPath'>>): string {
+    let updated: DataSource | undefined
+    const error = editSources((ss) =>
+      ss.map((s) => {
+        if (s.key !== key) return s
+        const next: DataSource = { ...s, ...patch }
+        if (!next.listPath) delete next.listPath
+        return (updated = next)
+      }),
+    )
     if (error) return error
-    void fetchOne({ key, url })
+    if (updated) void fetchOne(updated)
     return ''
   }
 
@@ -652,7 +684,7 @@ export const useEngineStore = defineStore('engine', () => {
     rulesReading,
     moveGroup,
     addSource,
-    setSourceUrl,
+    updateSource,
     renameSource,
     removeSource,
     moveSource,

@@ -40,6 +40,10 @@ export function parseConfig(text: string): { config: EngineConfig } | { error: s
     checkList(value.rules, 'rules', ['key', 'source'])
   if (problem) return { error: problem }
 
+  const sources = value.sources as Record<string, unknown>[]
+  const badPath = sources.findIndex((s) => s.listPath !== undefined && typeof s.listPath !== 'string')
+  if (badPath !== -1) return { error: `sources[${badPath}].listPath must be a string when present.` }
+
   const rules = value.rules as Record<string, unknown>[]
   const badLogic = rules.findIndex((r) => !('logic' in r))
   if (badLogic !== -1) return { error: `rules[${badLogic}] is missing "logic".` }
