@@ -26,10 +26,10 @@ const lastName = computed(() => store.pipelines[store.pipelines.length - 1]?.nam
 </script>
 
 <template>
-  <CollapsibleBox section="results" title="Results">
-    <template #actions>
-      <CopyJsonButton :value="() => store.compiledPipeline(store.resultOf!)" :disabled="!store.resultOf"
-        title="Copy the result's pipeline as one JSON Logic expression" />
+  <CollapsibleBox section="results" title="Results" class="results-panel">
+    <template #meta>
+      <span v-if="result?.ok" class="tag is-success ml-2">{{ describe(result.value) }}</span>
+      <span v-else-if="store.pipelines.length" class="tag is-danger ml-2">No result</span>
     </template>
     <div class="mt-3">
       <p v-if="!store.pipelines.length" class="help">
@@ -38,18 +38,23 @@ const lastName = computed(() => store.pipelines[store.pipelines.length - 1]?.nam
       <template v-else>
         <div class="field">
           <label class="label" :for="id">Result from</label>
-          <div class="control">
-            <div class="select">
-              <select :id="id" v-model="store.resultPipeline">
-                <option value="">The last pipeline ({{ lastName }})</option>
-                <option v-for="p in store.pipelines" :key="p.name" :value="p.name">{{ p.name }}</option>
-              </select>
+          <div class="field is-grouped is-grouped-multiline">
+            <div class="control">
+              <div class="select">
+                <select :id="id" v-model="store.resultPipeline">
+                  <option value="">The last pipeline ({{ lastName }})</option>
+                  <option v-for="p in store.pipelines" :key="p.name" :value="p.name">{{ p.name }}</option>
+                </select>
+              </div>
+            </div>
+            <div class="control">
+              <CopyJsonButton :value="() => store.compiledPipeline(store.resultOf!)" :disabled="!store.resultOf"
+                title="Copy the result's pipeline as one JSON Logic expression" />
             </div>
           </div>
         </div>
 
         <template v-if="result?.ok">
-          <p class="title is-4">{{ describe(result.value) }}</p>
           <pre class="payload">{{ json }}</pre>
           <p v-if="Array.isArray(result.value) && result.value.length > 20" class="help">
             Showing the first 20 of {{ result.value.length }} items.

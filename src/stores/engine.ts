@@ -148,9 +148,12 @@ export const useEngineStore = defineStore('engine', () => {
   const pipelines = ref<Pipeline[]>(cached ? validPipelines(cached.pipelines) : defaultPipelines)
   /** The pipeline the Results panel shows, by name; '' (or a name that's gone) means the last one. */
   const resultPipeline = ref(cached?.resultPipeline ?? '')
+  // Results always starts collapsed: it sticks to the foot of the screen,
+  // where open it would cover what's being edited.
   const sectionOpen = reactive<Record<SectionName, boolean>>({
     ...defaultSectionOpen,
     ...cached?.sectionOpen,
+    results: false,
   })
 
   /**

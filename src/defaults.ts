@@ -130,7 +130,7 @@ export const defaultSectionOpen: Record<SectionName, boolean> = {
   form: true,
   rules: true,
   pipelines: true,
-  results: true,
+  results: false,
 }
 
 /**

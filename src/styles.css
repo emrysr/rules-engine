@@ -11,6 +11,27 @@ details.box {
   margin-bottom: 1rem;
 }
 
+/* Results sticks to the foot of the screen, so the answer stays in sight
+   while the setup above it is edited. Open, its body scrolls rather than
+   covering the page. */
+details.box.results-panel {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  margin-bottom: 0;
+  padding-block: 0.5rem;
+  box-shadow: 0 -0.25rem 1rem rgba(0, 0, 0, 0.3);
+}
+
+details.box.results-panel .box-actions {
+  margin-top: -0.25rem;
+}
+
+details.box.results-panel[open] > :not(summary) {
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
 details > summary {
   list-style: revert;
 }
