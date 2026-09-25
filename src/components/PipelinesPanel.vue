@@ -73,7 +73,7 @@ function removePipeline(p: Pipeline) {
 </script>
 
 <template>
-  <CollapsibleBox section="pipelines" title="Pipelines">
+  <CollapsibleBox section="pipelines" title="Filter Pipeline">
     <div class="mt-3">
       <p class="help block">
         A pipeline is a stack of blocks: each takes the output of the one above, and the last

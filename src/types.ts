@@ -98,7 +98,7 @@ export interface EngineConfig {
   rules: Rule[]
   /** How each source's rules combine, by source key; a source without one ANDs all its rules. */
   combine?: Record<string, RuleGroup>
-  /** Pipelines built in the Pipelines panel (see pipeline.ts). */
+  /** Pipelines built in the Filter Pipeline panel (see pipeline.ts). */
   pipelines?: Pipeline[]
   /** The pipeline whose result is the Results panel's, by name; without one, the last pipeline. */
   result?: string
