@@ -5,10 +5,11 @@ import { parseConfig } from '@/config'
 import { typeNoun } from '@/fieldTypes'
 import { compileGroup, evaluateGroup, isRuleGroup, mapKeys } from '@/combine'
 import { entryPaths } from '@/comparison'
-import { isPipeline, runPipeline } from '@/pipeline'
+import { compilePipeline, isPipeline, renamePipelineRefs, runPipelines } from '@/pipeline'
 import type { Block, Pipeline } from '@/pipeline'
 import {
   FORM_NAMESPACE,
+  PIPELINE_NAMESPACE,
   buildRuleData,
   findPathClash,
   pathClash,
@@ -30,6 +31,7 @@ import type {
 } from '@/types'
 import {
   STORAGE_KEY,
+  defaultPipelines,
   defaultRules,
   defaultSchema,
   defaultSectionOpen,
@@ -144,7 +146,9 @@ export const useEngineStore = defineStore('engine', () => {
    */
   const combine = ref<Record<string, RuleGroup>>(validCombine(cached?.combine))
   /** Pipelines: stacks of blocks that each compile to one JSON Logic expression. */
-  const pipelines = ref<Pipeline[]>(validPipelines(cached?.pipelines))
+  const pipelines = ref<Pipeline[]>(cached ? validPipelines(cached.pipelines) : defaultPipelines)
+  /** The pipeline the Results panel shows, by name; '' (or a name that's gone) means the last one. */
+  const resultPipeline = ref(cached?.resultPipeline ?? '')
   const sectionOpen = reactive<Record<SectionName, boolean>>({
     ...defaultSectionOpen,
     ...cached?.sectionOpen,
@@ -310,18 +314,35 @@ export const useEngineStore = defineStore('engine', () => {
   )
 
   /**
-   * Everything a pipeline can read, by name: each list source's entries,
-   * each values source's values, and the form values under `formData`.
+   * Everything a pipeline can read, by name: each list source's entries
+   * after its Source Filter, each values source's values, and the form
+   * values under `formData`.
    */
   const pipelineScope = computed<Record<string, unknown>>(() => ({
-    ...Object.fromEntries(listSources.value.map((s) => [s.key, rawData[s.key]])),
+    ...Object.fromEntries(listSources.value.map((s) => [s.key, matchedEntries.value[s.key]])),
     ...valueScope.value,
     [FORM_NAMESPACE]: ruleFormData.value,
   }))
 
   /** Each pipeline's block-by-block results, by pipeline name. */
   const pipelineResults = computed(() =>
-    Object.fromEntries(pipelines.value.map((p) => [p.name, runPipeline(p, pipelineScope.value)])),
+    runPipelines(pipelines.value, {
+      scope: pipelineScope.value,
+      listSources: listSources.value.map((s) => s.key),
+    }),
+  )
+
+  /** The pipeline as one JSON Logic expression, Source Filters and the pipelines it reads written in. */
+  function compiledPipeline(p: Pipeline): unknown {
+    return compilePipeline(p, {
+      sourceFilter: (key) => compiledQueries.value[key],
+      pipelines: pipelines.value,
+    })
+  }
+
+  /** The pipeline whose result is the Results panel's: the chosen one, else the last. */
+  const resultOf = computed<Pipeline | undefined>(
+    () => pipelines.value.find((p) => p.name === resultPipeline.value) ?? pipelines.value[pipelines.value.length - 1],
   )
 
   /** A source's rule combination: the stored one, or all its rules ANDed. */
@@ -381,13 +402,6 @@ export const useEngineStore = defineStore('engine', () => {
     return out
   })
 
-  const grandTotal = computed(() =>
-    Object.values(sourceResults.value).reduce(
-      (acc, r) => ({ total: acc.total + r.total, matched: acc.matched + r.matched }),
-      { total: 0, matched: 0 },
-    ),
-  )
-
   // --- Whole-config import / export -----------------------------------------
   /**
    * Snapshot the current setup as one blob. Refuses while any section holds
@@ -411,6 +425,7 @@ export const useEngineStore = defineStore('engine', () => {
         rules: rulesConfig.value,
         combine: Object.fromEntries(listSources.value.map((s) => [s.key, combinationFor(s.key)])),
         pipelines: pipelines.value,
+        ...(resultPipeline.value && resultOf.value?.name === resultPipeline.value ? { result: resultPipeline.value } : {}),
         formData: { ...formData.value },
       },
     }
@@ -435,6 +450,7 @@ export const useEngineStore = defineStore('engine', () => {
     formData.value = { ...config.formData }
     combine.value = validCombine(config.combine)
     pipelines.value = validPipelines(config.pipelines)
+    resultPipeline.value = config.result ?? ''
     for (const key in ruleToggles) delete ruleToggles[key]
     emptyGroups.value = []
     seedFormData(config.schema)
@@ -699,6 +715,7 @@ export const useEngineStore = defineStore('engine', () => {
    */
   function renameSource(from: string, to: string): string {
     if (dataSources.value.some((s) => s.key === to)) return `There's already a source called "${to}".`
+    if (to === FORM_NAMESPACE || to === PIPELINE_NAMESPACE) return `"${to}" is taken: rules read form values and pipelines under it.`
     if (rulesError.value) {
       return "The saved rules are invalid JSON, so the rules using this source can't be updated - import a config to replace them."
     }
@@ -714,6 +731,10 @@ export const useEngineStore = defineStore('engine', () => {
         logic: isValues ? (renameVar(r.logic, from, to) as Rule['logic']) : r.logic,
       })),
     )
+    pipelines.value = pipelines.value.map((p) => ({
+      ...p,
+      blocks: p.blocks.map((b) => (b.type === 'source' && b.source === from ? { ...b, source: to } : b)),
+    }))
     for (const map of [rawData, sourceValues, loading, errors, combine.value] as Record<string, unknown>[]) {
       if (from in map) {
         map[to] = map[from]
@@ -837,14 +858,18 @@ export const useEngineStore = defineStore('engine', () => {
   function addPipeline(): string {
     let name = 'New pipeline'
     for (let n = 2; findPipeline(name); n++) name = `New pipeline ${n}`
-    const first = dataSources.value[0]?.key ?? ''
+    const first = listSources.value[0]?.key ?? ''
     pipelines.value = [...pipelines.value, { name, blocks: [{ type: 'source', source: first }] }]
     return name
   }
 
+  /** Rename a pipeline; pipelines reading its result, and the Results panel's pick, follow. */
   function renamePipeline(from: string, to: string): string {
     if (findPipeline(to)) return `There's already a pipeline called "${to}".`
-    pipelines.value = pipelines.value.map((p) => (p.name === from ? { ...p, name: to } : p))
+    // Other pipelines read its result as pipelines.<name>, where a dot would split the name.
+    if (to.includes('.')) return "A pipeline's name can't contain a dot."
+    pipelines.value = pipelines.value.map((p) => renamePipelineRefs(p.name === from ? { ...p, name: to } : p, from, to))
+    if (resultPipeline.value === from) resultPipeline.value = to
     return ''
   }
 
@@ -876,15 +901,18 @@ export const useEngineStore = defineStore('engine', () => {
       ruleToggles: { ...ruleToggles },
       combine: combine.value,
       pipelines: pipelines.value,
+      resultPipeline: resultPipeline.value,
       rawData: { ...rawData },
       sourceValues: { ...sourceValues },
       sectionOpen: { ...sectionOpen },
     })
   }
 
-  watch([sourcesText, schemaText, rulesText, formData, ruleToggles, combine, pipelines, sectionOpen], persist, {
-    deep: true,
-  })
+  watch(
+    [sourcesText, schemaText, rulesText, formData, ruleToggles, combine, pipelines, resultPipeline, sectionOpen],
+    persist,
+    { deep: true },
+  )
 
   return {
     sourcesText,
@@ -911,6 +939,9 @@ export const useEngineStore = defineStore('engine', () => {
     combine,
     pipelines,
     pipelineResults,
+    compiledPipeline,
+    resultPipeline,
+    resultOf,
     formFieldOptions,
     valuePaths,
     addPipeline,
@@ -923,7 +954,6 @@ export const useEngineStore = defineStore('engine', () => {
     compiledQueries,
     matchedEntries,
     sourceResults,
-    grandTotal,
     anyLoading,
     fetchAll,
     fetchOne,

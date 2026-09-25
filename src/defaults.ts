@@ -1,8 +1,10 @@
 import type { DataSource, Rule, SchemaField, SectionName } from './types'
+import type { Pipeline } from './pipeline'
 
 export const defaultSources: DataSource[] = [
   { key: 'products', url: 'https://dummyjson.com/products?limit=100' },
-  { key: 'users', url: 'https://dummyjson.com/users?limit=100' },
+  { key: 'users', url: 'https://dummyjson.com/users?limit=0' },
+  { key: 'carts', url: 'https://dummyjson.com/carts?limit=0' },
 ]
 
 export const defaultSchema: SchemaField[] = [
@@ -33,6 +35,7 @@ export const defaultSchema: SchemaField[] = [
     default: 'smartphones',
     group: 'Products',
   },
+  { key: 'productId', label: 'Product ID', type: 'number', default: 100, group: 'Carts' },
 ]
 
 export const defaultRules: Rule[] = [
@@ -68,6 +71,36 @@ export const defaultRules: Rule[] = [
   },
 ]
 
+/**
+ * The customers who bought a product: carts holding it give their buyers'
+ * user ids, then the users (as their Source Filter leaves them) with one of
+ * those ids give their names.
+ */
+export const defaultPipelines: Pipeline[] = [
+  {
+    name: 'Buyers',
+    blocks: [
+      { type: 'source', source: 'carts' },
+      {
+        type: 'filter',
+        condition: {
+          op: 'and',
+          items: [{ some: [{ var: 'products' }, { '==': [{ var: 'id' }, { var: 'formData.carts.product_id' }] }] }],
+        },
+      },
+      { type: 'map', path: 'userId' },
+    ],
+  },
+  {
+    name: 'Customer names',
+    blocks: [
+      { type: 'source', source: 'users' },
+      { type: 'filter', condition: { op: 'and', items: [{ in: [{ var: 'id' }, { var: 'pipelines.Buyers' }] }] } },
+      { type: 'map', path: 'firstName' },
+    ],
+  },
+]
+
 export const defaultSectionOpen: Record<SectionName, boolean> = {
   config: false,
   sources: true,
@@ -79,6 +112,7 @@ export const defaultSectionOpen: Record<SectionName, boolean> = {
 
 /**
  * Bump when the persisted shape changes so stale caches are ignored. v4: rules
- * read form values by snake_cased legend + label, not by field key.
+ * read form values by snake_cased legend + label, not by field key. v5:
+ * pipelines start from filtered list sources, and the demo gains carts.
  */
-export const STORAGE_KEY = 'cdre-config-v4'
+export const STORAGE_KEY = 'cdre-config-v5'

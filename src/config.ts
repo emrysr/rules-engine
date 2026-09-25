@@ -75,6 +75,10 @@ export function parseConfig(text: string): { config: EngineConfig } | { error: s
     }
   }
 
+  if (value.result !== undefined && typeof value.result !== 'string') {
+    return { error: '"result" must be a pipeline name when present.' }
+  }
+
   if (value.formData !== undefined && !isObject(value.formData)) {
     return { error: '"formData" must be an object when present.' }
   }

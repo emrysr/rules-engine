@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { BLOCK_LABELS, compilePipeline, describe, newBlock } from '@/pipeline'
+import { BLOCK_LABELS, describe, newBlock } from '@/pipeline'
 import type { Block, BlockType, Pipeline, StepResult } from '@/pipeline'
 import { useEngineStore } from '@/stores/engine'
 import CollapsibleBox from './CollapsibleBox.vue'
@@ -25,6 +25,12 @@ function results(p: Pipeline): StepResult[] {
 function inputOf(p: Pipeline, i: number): unknown {
   const prev = results(p)[i - 1]
   return prev?.ok ? prev.value : undefined
+}
+
+/** What pipeline p's conditions can read: the result of the one directly above. */
+function readable(pi: number): string[] {
+  const prev = store.pipelines[pi - 1]
+  return prev ? [prev.name] : []
 }
 
 function final(p: Pipeline): StepResult | undefined {
@@ -71,11 +77,16 @@ function removePipeline(p: Pipeline) {
     <div class="mt-3">
       <p class="help block">
         A pipeline is a stack of blocks: each takes the output of the one above, and the last
-        one's output is the result. Start from a source, then filter, map, test or count. Inside
-        a block, conditions read each item's own fields as well as the sources and form values.
-        <strong>Copy JSON</strong> gives the whole pipeline as one JSON Logic expression - to run
-        it, your app needs the sources and form values in scope, including inside
-        <code>filter</code> and <code>map</code>.
+        one's output is the pipeline's result. Start from a source - a list source comes through
+        its Source Filter - then filter, map, test or count. Inside a block, conditions read each
+        item's own fields as well as the sources and form values, and can check a list on the
+        item with <strong>has an item where</strong>. A pipeline can also read the result of the
+        pipeline directly above it (as <strong>Pipeline result</strong>, e.g. <em>id is one of
+        Buyers</em>), so the pipelines build towards one answer, shown under Results.
+        <strong>Copy JSON</strong> gives the whole pipeline as one JSON Logic expression, with the
+        Source Filters and the pipeline above written in - to run it, your app needs the sources
+        and form values in scope, including inside <code>filter</code>, <code>map</code> and
+        <code>some</code>.
       </p>
 
       <p v-if="error" class="help is-danger mb-3">{{ error }}</p>
@@ -92,7 +103,7 @@ function removePipeline(p: Pipeline) {
                 <div v-if="i > 0" class="pipeline-arrow" aria-hidden="true">
                   <svg class="move-icon" viewBox="0 0 24 24"><path d="M12 5v14M6 13l6 6 6-6" /></svg>
                 </div>
-                <PipelineBlock :block="b" :input="inputOf(p, i)" :result="results(p)[i]"
+                <PipelineBlock :block="b" :input="inputOf(p, i)" :result="results(p)[i]" :pipelines="readable(pi)"
                   :label="`${p.name} ${BLOCK_LABELS[b.type].toLowerCase()} ${i + 1}`"
                   :can-move-up="i > 1" :can-move-down="i > 0 && i < p.blocks.length - 1"
                   @update="(nb) => setBlocks(p, p.blocks.map((x, j) => (j === i ? nb : x)))"
@@ -122,7 +133,7 @@ function removePipeline(p: Pipeline) {
             </div>
 
             <template #actions>
-              <CopyJsonButton :value="() => compilePipeline(p)" title="Copy the pipeline as one JSON Logic expression" />
+              <CopyJsonButton :value="() => store.compiledPipeline(p)" title="Copy the pipeline as one JSON Logic expression" />
             </template>
           </EditableFieldset>
           <GridAddCell label="Add pipeline" @add="addPipeline" />

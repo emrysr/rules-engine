@@ -1,12 +1,13 @@
 import type { Entry } from '@/types'
-import { FORM_NAMESPACE } from '@/paths'
+import { FORM_NAMESPACE, PIPELINE_NAMESPACE } from '@/paths'
 
 /**
- * The single-comparison rule the query builder edits: `left <op> right`,
+ * The single comparison the rule builder edits: `left <op> right`,
  * stored as plain JSON Logic (`{"<op>": [left, right]}`). Each side is an
  * entry field (`{"var": "rating"}`), a form field
- * (`{"var": "formData.products.minimum_product_rating"}`) or a value
- * hard-coded into the rule (`4`, `"smartphones"`).
+ * (`{"var": "formData.products.minimum_product_rating"}`), a values
+ * source's value, another pipeline's result (`{"var": "pipelines.Buyers"}`,
+ * in pipelines only) or a value hard-coded into the rule (`4`, `"smartphones"`).
  */
 
 export const OPERATORS = [
@@ -16,12 +17,12 @@ export const OPERATORS = [
   { op: '>=', label: 'is at least' },
   { op: '<', label: 'is less than' },
   { op: '<=', label: 'is at most' },
-  { op: 'in', label: 'is in' },
+  { op: 'in', label: 'is one of' },
 ] as const
 
 export type Operator = (typeof OPERATORS)[number]['op']
 
-export type OperandKind = 'entry' | 'form' | 'source' | 'value'
+export type OperandKind = 'entry' | 'form' | 'source' | 'pipeline' | 'value'
 
 export type Literal = string | number | boolean | null
 
@@ -30,6 +31,7 @@ export type Operand =
   | { kind: 'entry'; path: string }
   | { kind: 'form'; path: string }
   | { kind: 'source'; path: string }
+  | { kind: 'pipeline'; name: string }
   | { kind: 'value'; value: Literal }
 
 export interface Comparison {
@@ -39,6 +41,7 @@ export interface Comparison {
 }
 
 const FORM_PREFIX = FORM_NAMESPACE + '.'
+const PIPELINE_PREFIX = PIPELINE_NAMESPACE + '.'
 
 function isLiteral(x: unknown): x is Literal {
   return x === null || ['string', 'number', 'boolean'].includes(typeof x)
@@ -51,6 +54,7 @@ function parseOperand(x: unknown, valueKeys: string[]): Operand | null {
   const path = (x as { var?: unknown }).var
   if (keys.length !== 1 || typeof path !== 'string') return null
   if (path.startsWith(FORM_PREFIX)) return { kind: 'form', path }
+  if (path.startsWith(PIPELINE_PREFIX)) return { kind: 'pipeline', name: path.slice(PIPELINE_PREFIX.length) }
   if (valueKeys.includes(path.split('.')[0])) return { kind: 'source', path }
   return { kind: 'entry', path }
 }
@@ -71,7 +75,8 @@ export function parseComparison(logic: unknown, valueKeys: string[] = []): Compa
 }
 
 function operandLogic(o: Operand): unknown {
-  return o.kind === 'value' ? o.value : { var: o.path }
+  if (o.kind === 'value') return o.value
+  return { var: o.kind === 'pipeline' ? PIPELINE_PREFIX + o.name : o.path }
 }
 
 export function comparisonLogic(c: Comparison): Record<string, unknown> {

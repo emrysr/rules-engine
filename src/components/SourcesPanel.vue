@@ -91,8 +91,9 @@ function removeSource(key: string) {
     <div class="mt-3">
       <p class="help block">
         The data the rules work with, fetched from a URL or pasted in as JSON. A
-        <strong>list</strong> source is filtered by its rules and gets a query and a result; its
-        name is also the response field its list is read from (falling back to the first list).
+        <strong>list</strong> source is narrowed by its Source Filter, and pipelines start from
+        what's left; its name is also the response field its list is read from (falling back to
+        the first list).
         A <strong>values</strong> source is an object of values every rule can read, e.g.
         <code>{"var": "teetime.target_day"}</code> - in a real app these would be the inputs in
         the rules' scope. Click a name to rename it; rules follow.

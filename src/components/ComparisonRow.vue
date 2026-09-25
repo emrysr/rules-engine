@@ -17,9 +17,11 @@ const props = withDefaults(
     entryPaths: string[]
     /** What those fields are called here: "Entry field", "Item field". */
     entryLabel?: string
+    /** Pipelines whose result this comparison can read, by name. */
+    pipelines?: string[]
     label: string
   }>(),
-  { entryLabel: 'Entry field' },
+  { entryLabel: 'Entry field', pipelines: () => [] },
 )
 const emit = defineEmits<{ update: [logic: unknown] }>()
 
@@ -48,7 +50,8 @@ function setOp(op: string) {
 <template>
   <template v-if="comparison">
     <OperandPicker :operand="comparison.left" :entry-paths="entryPaths" :entry-label="entryLabel"
-      :form-fields="store.formFieldOptions" :source-paths="store.valuePaths" :label="`${label} left side`"
+      :form-fields="store.formFieldOptions" :source-paths="store.valuePaths" :pipelines="pipelines"
+      :label="`${label} left side`"
       @update="(o) => setSide('left', o)" />
     <div class="field">
       <div class="control">
@@ -61,7 +64,8 @@ function setOp(op: string) {
       </div>
     </div>
     <OperandPicker :operand="comparison.right" :entry-paths="entryPaths" :entry-label="entryLabel"
-      :form-fields="store.formFieldOptions" :source-paths="store.valuePaths" :label="`${label} right side`"
+      :form-fields="store.formFieldOptions" :source-paths="store.valuePaths" :pipelines="pipelines"
+      :label="`${label} right side`"
       @update="(o) => setSide('right', o)" />
   </template>
 </template>

@@ -10,6 +10,9 @@ import type { SchemaField } from '@/types'
 
 export const FORM_NAMESPACE = 'formData'
 
+/** Where a pipeline's conditions read other pipelines' results: `pipelines.<name>`. */
+export const PIPELINE_NAMESPACE = 'pipelines'
+
 /** "Minimum product rating" → "minimum_product_rating". */
 export function snakeCase(text: string): string {
   return text

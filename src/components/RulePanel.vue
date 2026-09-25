@@ -26,7 +26,7 @@ const newRule = ref('')
 const drafts = reactive<Record<string, string>>({})
 const draftErrors = reactive<Record<string, string>>({})
 
-/** Rules showing their raw JSON instead of the query builder, by key. Session-only. */
+/** Rules showing their raw JSON instead of the rule builder, by key. Session-only. */
 const rawView = reactive<Record<string, boolean>>({})
 
 // Back to the builder, a draft that never parsed is dropped: the builder
@@ -53,7 +53,7 @@ function onLogicInput(r: Rule, text: string) {
   }
 }
 
-// From the query builder: it replaces whatever the textarea held.
+// From the rule builder: it replaces whatever the textarea held.
 function setLogic(r: Rule, logic: Rule['logic']) {
   error.value = store.updateRule(r.key, { logic })
   if (error.value) return
@@ -124,18 +124,19 @@ function usedIn(source: string) {
 </script>
 
 <template>
-  <CollapsibleBox section="rules" title="JSON Rules">
+  <CollapsibleBox section="rules" title="Source Filters">
     <template #actions>
       <CopyJsonButton :value="queriesToCopy" :disabled="!store.listSources.length"
-        title="Copy one combined JSON Logic query per data source" />
+        title="Copy each source's filter as one JSON Logic query" />
     </template>
     <div class="mt-3">
       <p class="help block">
-        Each rule is one condition on a data source. Click a rule's name to rename it. Its logic
+        Source Filters narrow each list source down on its own, before the pipelines use it. Each
+        rule is one condition on a source's entries; click a rule's name to rename it. Its logic
         is JSON Logic - entry fields directly, form fields via
         <code>formData.&lt;group&gt;.&lt;label&gt;</code>, values sources via
-        <code>&lt;source&gt;.&lt;field&gt;</code>. The Query Builder below sets how they join up
-        into each source's result query.
+        <code>&lt;source&gt;.&lt;field&gt;</code>. <strong>Each source's filter</strong>, below,
+        sets how its rules join up.
       </p>
 
       <p v-if="error" class="help is-danger mb-3">{{ error }}</p>
@@ -185,7 +186,7 @@ function usedIn(source: string) {
 
             <template #actions>
               <button type="button" class="button" :aria-pressed="!!rawView[r.key]"
-                :title="rawView[r.key] ? 'Back to the query builder' : 'Edit this rule\'s logic as raw JSON'"
+                :title="rawView[r.key] ? 'Back to the rule builder' : 'Edit this rule\'s logic as raw JSON'"
                 @click="toggleRaw(r.key)">
                 {{ rawView[r.key] ? 'Use builder' : 'Edit JSON' }}
               </button>
@@ -195,13 +196,14 @@ function usedIn(source: string) {
         </div>
       </div>
 
-      <p class="label mt-5">Query Builder</p>
+      <p class="label mt-5">Each source's filter</p>
       <p class="help block">
-        How each source's rules join up into its result query: <strong>all of</strong> (AND) or
+        How each source's rules join up into its filter: <strong>all of</strong> (AND) or
         <strong>any of</strong> (OR), with groups for mixing the two, e.g. all of highRating and
         inStock, or any of bloodTypeMatch and adultUser. A rule switched off above is skipped
-        wherever it appears. <strong>Copy JSON</strong> copies the result: one JSON Logic query
-        per source, with each rule's logic written in, ready to paste into another app.
+        wherever it appears. The entries a filter keeps are what the pipelines start from.
+        <strong>Copy JSON</strong> copies one JSON Logic query per source, with each rule's logic
+        written in, ready to paste into another app.
       </p>
       <div class="fixed-grid has-1-cols-mobile has-2-cols-tablet">
         <div class="grid">
@@ -209,7 +211,7 @@ function usedIn(source: string) {
             <legend class="label">{{ s.key }}</legend>
             <p class="mb-3">
               <span class="tag" :class="store.sourceResults[s.key]?.matched ? 'is-success' : 'is-danger'">
-                {{ store.sourceResults[s.key]?.matched ?? 0 }} / {{ store.sourceResults[s.key]?.total ?? 0 }} match
+                {{ store.sourceResults[s.key]?.matched ?? 0 }} / {{ store.sourceResults[s.key]?.total ?? 0 }} kept
               </span>
             </p>
             <CombineGroup :group="store.combinationFor(s.key)" :rules="rulesOn(s.key)" :used="usedIn(s.key)"

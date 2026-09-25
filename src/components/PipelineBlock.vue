@@ -14,6 +14,8 @@ const props = defineProps<{
   block: Block
   input: unknown
   result: StepResult | undefined
+  /** Pipelines whose result this block's conditions can read, by name. */
+  pipelines: string[]
   label: string
   canMoveUp: boolean
   canMoveDown: boolean
@@ -23,10 +25,20 @@ const emit = defineEmits<{ update: [block: Block]; remove: []; move: [step: -1 |
 const store = useEngineStore()
 const listId = useId()
 
-/** Field paths of the items coming in, for suggestions. */
+/** The items coming in, for field suggestions. */
+const items = computed(() => (Array.isArray(props.input) ? props.input : []))
+
+/** Field paths of the items coming in, for the map block's suggestions. */
 const itemPaths = computed(() => {
-  const items = Array.isArray(props.input) ? props.input : []
-  return entryPaths(items.filter((i) => i && typeof i === 'object' && !Array.isArray(i)) as Record<string, unknown>[])
+  const objects = items.value.filter((i) => i && typeof i === 'object' && !Array.isArray(i))
+  return entryPaths(objects as Record<string, unknown>[])
+})
+
+/** The list sources a pipeline can start from, plus the block's own if it's gone. */
+const sourceOptions = computed(() => {
+  const keys = store.listSources.map((s) => s.key)
+  const own = props.block.type === 'source' ? props.block.source : ''
+  return own && !keys.includes(own) ? [...keys, own] : keys
 })
 
 /** The output as JSON, trimmed to the first few items of a long list. */
@@ -65,32 +77,21 @@ function value(e: Event): string {
       </div>
     </div>
 
-    <template v-if="block.type === 'source'">
-      <div class="field">
-        <label class="label" :for="`${listId}-source`">Source</label>
-        <div class="control">
-          <div class="select is-fullwidth">
-            <select :id="`${listId}-source`" :value="block.source" @change="patch({ source: value($event) })">
-              <option value="" disabled>Choose a source</option>
-              <option v-for="s in store.dataSources" :key="s.key" :value="s.key">
-                {{ s.key }} ({{ s.use === 'values' ? 'values' : 'list' }})
-              </option>
-            </select>
-          </div>
+    <div v-if="block.type === 'source'" class="field">
+      <label class="label" :for="`${listId}-source`">Source</label>
+      <div class="control">
+        <div class="select is-fullwidth">
+          <select :id="`${listId}-source`" :value="block.source" @change="patch({ source: value($event) })">
+            <option value="" disabled>Choose a source</option>
+            <option v-for="s in sourceOptions" :key="s" :value="s">{{ s }}</option>
+          </select>
         </div>
       </div>
-      <div class="field">
-        <label class="label" :for="`${listId}-path`">Path</label>
-        <div class="control">
-          <input :id="`${listId}-path`" class="input" type="text" :value="block.path ?? ''"
-            placeholder="The whole source" @change="patch({ path: value($event).trim() || undefined })" />
-        </div>
-        <p class="help">Walk into the data, e.g. <code>ruleset.rules</code>.</p>
-      </div>
-    </template>
+      <p class="help">As its Source Filter leaves it.</p>
+    </div>
 
-    <ConditionEditor v-else-if="block.type === 'filter'" :condition="block.condition" :item-paths="itemPaths"
-      :label="label" @update="(condition) => patch({ condition })" />
+    <ConditionEditor v-else-if="block.type === 'filter'" :condition="block.condition" :items="items"
+      :pipelines="pipelines" :label="label" @update="(condition) => patch({ condition })" />
 
     <div v-else-if="block.type === 'map'" class="field">
       <label class="label" :for="`${listId}-map`">Pick field</label>
@@ -115,7 +116,7 @@ function value(e: Event): string {
           </div>
         </div>
       </div>
-      <ConditionEditor :condition="block.condition" :item-paths="itemPaths" :label="label"
+      <ConditionEditor :condition="block.condition" :items="items" :pipelines="pipelines" :label="label"
         @update="(condition) => patch({ condition })" />
     </template>
 

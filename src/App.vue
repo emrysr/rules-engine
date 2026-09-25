@@ -21,7 +21,7 @@ onMounted(() => store.fetchAll())
       <p class="title is-4">Config-Driven Rules Engine</p>
       <p class="subtitle is-6">
         Real FormKit inputs, live over multiple API list endpoints, filtered by toggleable JSON
-        Logic rules.
+        Logic rules and combined by pipelines into one result.
       </p>
     </div>
   </section>
@@ -90,8 +90,12 @@ onMounted(() => store.fetchAll())
           count), each feeding the next, compiled to one JSON Logic expression</s>
         </li>
         <li>
-          Pipelines, next - more blocks (sum / min / max, map to an object), one pipeline's
-          result as another's input, and whether pipelines replace JSON Rules
+          <s>Source Filters feed pipelines, and pipelines build one result - a pipeline starts
+          from a filtered source, can check a list on each item ("has an item where"), and can
+          read the result of the pipeline above it</s>
+        </li>
+        <li>
+          Pipelines, next - more blocks (sum / min / max, map to an object)
         </li>
         <li>
           Replace the browser's confirm prompts with a Bulma dialog

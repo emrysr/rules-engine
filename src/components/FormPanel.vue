@@ -80,7 +80,7 @@ function deleteGroup(name: string, fields: SchemaField[]) {
         existing FormKit project and render with
         <code>&lt;FormKit type="form"&gt;&lt;FormKitSchema :schema="schema" /&gt;&lt;/FormKit&gt;</code>.
         Each fieldset becomes a FormKit group, so the form's value has the same
-        <code>formData.&lt;group&gt;.&lt;label&gt;</code> shape the copied JSON Rules read - pass it
+        <code>formData.&lt;group&gt;.&lt;label&gt;</code> shape the copied Source Filters and pipelines read - pass it
         to them as <code>formData</code>.
       </p>
 
