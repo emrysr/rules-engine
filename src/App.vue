@@ -42,8 +42,8 @@ onMounted(() => store.fetchAll())
           operator / value pickers instead of hand-written JSON Logic)
         </li>
         <li>
-          <s>FormKit schema editor — replace the raw JSON textarea with a field builder (add/edit</s>/
-          reorder fields<s>, pick type, set options)</s>
+          <s>FormKit schema editor — replace the raw JSON textarea with a field builder (add/edit/
+          reorder fields, pick type, set options)</s>
         </li>
         <li>
           Save / recall named config presets (e.g. "Desirable Campervan", "Holiday Activities")
