@@ -96,7 +96,7 @@ export const defaultPipelines: Pipeline[] = [
     blocks: [
       { type: 'source', source: 'users' },
       { type: 'filter', condition: { op: 'and', items: [{ in: [{ var: 'id' }, { var: 'pipelines.Buyers' }] }] } },
-      { type: 'map', path: 'firstName, lastName', join: ' ' },
+      { type: 'map', path: 'firstName + " " + lastName' },
     ],
   },
 ]

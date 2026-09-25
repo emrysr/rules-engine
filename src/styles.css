@@ -1,4 +1,5 @@
-textarea.code {
+textarea.code,
+input.code {
   font-family: monospace;
 }
 
