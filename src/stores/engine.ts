@@ -1,5 +1,5 @@
 import { computed, nextTick, reactive, ref, watch } from 'vue'
-import { defineStore } from 'pinia'
+import { acceptHMRUpdate, defineStore } from 'pinia'
 import { parseConfig } from '@/config'
 import { typeNoun } from '@/fieldTypes'
 import { compileGroup, evaluateGroup, isRuleGroup, mapKeys } from '@/combine'
@@ -1004,3 +1004,7 @@ export const useEngineStore = defineStore('engine', () => {
     moveRule,
   }
 })
+
+// In development, pick up edits to this store (and the modules it uses)
+// without a reload; otherwise the page keeps running the old code.
+if (import.meta.hot) import.meta.hot.accept(acceptHMRUpdate(useEngineStore, import.meta.hot))

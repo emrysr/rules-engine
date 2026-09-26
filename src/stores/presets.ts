@@ -1,5 +1,5 @@
 import { computed, ref, watch } from 'vue'
-import { defineStore } from 'pinia'
+import { acceptHMRUpdate, defineStore } from 'pinia'
 import type { EngineConfig } from '@/types'
 import { useEngineStore } from '@/stores/engine'
 
@@ -119,3 +119,7 @@ export const usePresetsStore = defineStore('presets', () => {
 
   return { presets, matchesCurrent, saveAsNew, overwrite, load, rename, remove, move }
 })
+
+// In development, pick up edits to this store (and the modules it uses)
+// without a reload; otherwise the page keeps running the old code.
+if (import.meta.hot) import.meta.hot.accept(acceptHMRUpdate(usePresetsStore, import.meta.hot))
