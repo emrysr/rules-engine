@@ -139,7 +139,7 @@ export const examples: Example[] = [
   {
     name: '3. Who bought it?',
     description:
-      'Three sources joined into one answer: the customers of the chosen age who bought a product, and how many. Uses list checks, a pasted values source, rules to switch on, and pipelines that build on each other.',
+      "Everything together: how many customers of a chosen age bought a product. Each cart's list of products is checked for the one picked, a pasted source sets what counts as a big cart, and the last pipeline counts the customers above it. Try switching on bigCart, or switching off How many to see their names.",
     config: {
       sources: [
         { key: 'carts', url: 'https://dummyjson.com/carts?limit=0' },
