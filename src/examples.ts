@@ -76,7 +76,68 @@ export const examples: Example[] = [
     },
   },
   {
-    name: '2. Who bought it?',
+    name: '2. Two sources joined',
+    description:
+      'Two sources, each with its own filter, joined by two short pipelines: the popular posts written by older users. The first pipeline gets the authors, the second keeps the posts they wrote.',
+    config: {
+      sources: [
+        { key: 'users', url: 'https://dummyjson.com/users?limit=0' },
+        { key: 'posts', url: 'https://dummyjson.com/posts?limit=0' },
+      ],
+      schema: [
+        {
+          key: 'minAge',
+          label: 'Minimum age',
+          type: 'number',
+          default: 45,
+          group: 'Users',
+          help: 'Only users at least this old count as authors (oldEnough).',
+        },
+        {
+          key: 'minViews',
+          label: 'Minimum views',
+          type: 'number',
+          default: 2000,
+          group: 'Posts',
+          help: 'Only posts viewed at least this many times are kept (popular).',
+        },
+      ],
+      rules: [
+        {
+          key: 'oldEnough',
+          source: 'users',
+          enabled: true,
+          logic: { '>=': [{ var: 'age' }, { var: 'formData.users.minimum_age' }] },
+        },
+        {
+          key: 'popular',
+          source: 'posts',
+          enabled: true,
+          logic: { '>=': [{ var: 'views' }, { var: 'formData.posts.minimum_views' }] },
+        },
+      ],
+      pipelines: [
+        {
+          name: 'Authors',
+          blocks: [
+            { type: 'source', source: 'users' },
+            { type: 'map', path: 'id' },
+          ],
+        },
+        {
+          name: 'Their posts',
+          blocks: [
+            { type: 'source', source: 'posts' },
+            { type: 'filter', condition: { op: 'and', items: [{ in: [{ var: 'userId' }, { var: 'pipelines.Authors' }] }] } },
+            { type: 'map', path: 'title' },
+          ],
+        },
+      ],
+      formData: { minAge: 45, minViews: 2000 },
+    },
+  },
+  {
+    name: '3. Who bought it?',
     description:
       'Three sources joined into one answer: the customers of the chosen age who bought a product, and how many. Uses list checks, a pasted values source, rules to switch on, and pipelines that build on each other.',
     config: {

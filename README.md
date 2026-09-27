@@ -27,7 +27,10 @@ The Configuration panel has built-in examples to load in order (`src/examples.ts
 
 1. **One filter** - one source (products), one form choice (category) and one rule. No
    pipeline, so Results is the filtered products.
-2. **Who bought it?** - carts, users and a pasted values source joined into one answer:
+2. **Two sources joined** - users and posts, each with one filter from the form, joined
+   by two short pipelines: **Authors** (the users' ids) and **Their posts** (the posts
+   whose `userId` is one of Authors, as titles).
+3. **Who bought it?** - carts, users and a pasted values source joined into one answer:
    the customers of the chosen age who bought a product, and how many. Switch on `bigCart`
    to keep only big carts, or switch off the **How many** pipeline to see the names.
 
