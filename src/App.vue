@@ -17,12 +17,39 @@ onMounted(() => store.fetchAll())
 
 <template>
   <section class="hero is-link">
-    <div class="hero-body py-5">
-      <p class="title is-4">Config-Driven Rules Engine</p>
-      <p class="subtitle is-6">
-        Real FormKit inputs, live over multiple API list endpoints, filtered by toggleable JSON
-        Logic rules and combined by pipelines into one result.
-      </p>
+    <div class="hero-body py-5 px-0">
+      <!-- In the panels' container, so the intro lines up with them. -->
+      <div class="container px-4">
+        <p class="title is-4">Config-Driven Rules Engine</p>
+        <p class="subtitle is-6 mb-4">
+          A proof of concept: the questions an app asks of its data live in configuration, not
+          code. Change the config and the answer changes - no rebuild, no release.
+        </p>
+        <ol class="intro-steps columns is-variable is-2">
+          <li class="column">
+            <strong>1. Options Form</strong>
+            <span>The choices a user makes, e.g. a Product ID.</span>
+          </li>
+          <li class="column">
+            <strong>2. Data Sources</strong>
+            <span>The data to ask about, from any JSON API.</span>
+          </li>
+          <li class="column">
+            <strong>3. Data Filters</strong>
+            <span>Rules that narrow each source on its own.</span>
+          </li>
+          <li class="column">
+            <strong>4. Filter Pipeline</strong>
+            <span>Joins the filtered sources into one answer, shown in Results.</span>
+          </li>
+        </ol>
+        <p class="intro-try">
+          <strong>Try it:</strong> the demo asks <em>who bought AirPods?</em> Change the Product ID
+          in the Options Form and watch Results at the foot of the screen. Every rule and pipeline
+          copies out as standard JSON Logic for an app to run, and a whole setup saves or shares
+          from Configuration.
+        </p>
+      </div>
     </div>
   </section>
 

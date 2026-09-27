@@ -551,3 +551,26 @@ details.sub-section {
   display: list-item;
   margin-bottom: 0.75rem;
 }
+
+/* The intro's four steps, one per panel: a row on wider screens, stacked on a phone. */
+.intro-steps {
+  list-style: none;
+  margin: 0 0 0.75rem;
+}
+
+.intro-steps > .column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  font-size: 0.875rem;
+}
+
+.intro-steps strong,
+.intro-try strong {
+  color: inherit;
+}
+
+.intro-try {
+  font-size: 0.875rem;
+  max-width: 60rem;
+}

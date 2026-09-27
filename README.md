@@ -1,8 +1,10 @@
 # Config-Driven Rules Engine
 
-A schema-driven architecture demo: FormKit form schema + JSON Logic rules + external
-API data sources, all editable as config. Toggleable rules filter each source, then
-pipelines combine the filtered sources into one result.
+A proof of concept: the questions an app asks of its data live in configuration, not
+code. A FormKit form supplies the user's choices, JSON APIs supply the data, JSON Logic
+rules narrow each source, and pipelines join the filtered sources into one answer. Change
+the config and the answer changes, with no rebuild or release, and every rule and
+pipeline copies out as standard JSON Logic for an app to run.
 
 ```
 Sources ─► Data Filters ─► Pipelines ─► Result
