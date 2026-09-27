@@ -21,6 +21,16 @@ keeps the users whose id is one of Buyers' and maps them to first and last names
 
 Installable as a PWA and works offline from the last-fetched data.
 
+## Examples
+
+The Configuration panel has built-in examples to load in order (`src/examples.ts`):
+
+1. **One filter** - one source (products), one form choice (category) and one rule. No
+   pipeline, so Results is the filtered products.
+2. **Who bought it?** - carts, users and a pasted values source joined into one answer:
+   the customers of the chosen age who bought a product, and how many. Switch on `bigCart`
+   to keep only big carts, or switch off the **How many** pipeline to see the names.
+
 ## The idea
 
 Nothing about *what* this filters is compiled in. Data sources, form fields and rules

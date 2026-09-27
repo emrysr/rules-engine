@@ -47,7 +47,7 @@ onMounted(() => store.fetchAll())
           <strong>Try it:</strong> the demo asks <em>who bought AirPods?</em> Change the Product ID
           in the Options Form and watch Results at the foot of the screen. Every rule and pipeline
           copies out as standard JSON Logic for an app to run, and a whole setup saves or shares
-          from Configuration.
+          from Configuration, where the examples step from one filter up to everything at once.
         </p>
       </div>
     </div>
